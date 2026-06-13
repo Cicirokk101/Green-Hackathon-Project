@@ -1,0 +1,33 @@
+/* ===== Karma typography ===== */
+:root {
+  /* families */
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;   /* display & headings */
+  --font-sans:  'Hanken Grotesk', system-ui, -apple-system, sans-serif; /* UI & body */
+  --font-mono:  'JetBrains Mono', ui-monospace, 'SF Mono', monospace;   /* specs, code, tokens */
+
+  /* weights */
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semibold:600;
+  --fw-bold:    700;
+  --fw-extra:   800;
+
+  /* display / heading scale (Newsreader, line-height kept >= 1.1 to avoid glyph clipping) */
+  --text-display:   700 52px/1.14 var(--font-serif); /* manifesto / marketing */
+  --text-h1:        700 38px/1.14 var(--font-serif); /* page titles */
+  --text-h2:        700 30px/1.2  var(--font-serif); /* section headings */
+  --text-h3:        700 24px/1.2  var(--font-serif);
+  --text-card-title:700 20px/1.2  var(--font-serif); /* project card titles */
+  --text-quote:     500 italic 28px/1.35 var(--font-serif); /* pull quotes */
+
+  /* body & UI (Hanken Grotesk) */
+  --text-body-lg:   400 16px/1.6  var(--font-sans);
+  --text-body:      400 15px/1.55 var(--font-sans);
+  --text-ui:        600 14px/1.3  var(--font-sans); /* buttons, nav, labels */
+  --text-meta:      400 13px/1.45 var(--font-sans); /* host lines, captions */
+  --text-small:     500 12px/1.4  var(--font-sans);
+
+  /* eyebrow — uppercase tracked label */
+  --text-eyebrow:   700 12px/1.2  var(--font-sans);
+  --tracking-eyebrow: 0.12em;
+}

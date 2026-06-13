@@ -1,0 +1,53 @@
+/* Karma Design System — global entry. */
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  color: var(--ink);
+}
+::selection { background: var(--orange); color: #fff; }
+
+/* ---- interactive states ---- */
+.kbtn { transition: transform .12s ease, box-shadow .12s ease, background .15s ease, opacity .15s ease; }
+.kbtn:hover { transform: translateY(-1px); opacity: .94; }
+.kbtn:active { transform: translateY(0); }
+.kbtn-primary:hover { box-shadow: var(--shadow-glow-orange); }
+
+.knav { transition: background .15s ease, color .15s ease; }
+.knav:hover { background: var(--orange-bg); color: var(--orange-deep); }
+
+.kchip {
+  font-family: var(--font-sans); font-size: 13.5px; font-weight: 600;
+  padding: 9px 18px; border-radius: var(--radius-pill); border: 1px solid transparent; cursor: pointer;
+  transition: background .15s ease, color .15s ease, transform .1s ease;
+}
+.kchip:hover { transform: translateY(-1px); }
+.kchip:not(.kchip-active):hover { background: var(--orange-bg); color: var(--orange-deep); }
+
+.kcard { transition: transform .16s ease, box-shadow .16s ease; }
+.kcard:hover { transform: translateY(-3px); box-shadow: var(--shadow-lifted); }
+
+.kiconbtn { transition: border-color .15s ease, background .15s ease; }
+.kiconbtn:hover { border-color: #F0C79B; background: var(--orange-bg); }
+
+.ktab { transition: color .15s ease; }
+.ktab:hover { color: var(--orange-deep) !important; }
+
+.klink:hover { text-decoration: underline !important; color: var(--orange-deep) !important; }
+
+.klinkcard { transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.klinkcard:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(43,34,24,0.1); border-color: #F0C79B !important; }
+
+.kinput { transition: border-color .15s ease, box-shadow .15s ease; }
+.kinput:focus { border-color: var(--orange) !important; box-shadow: 0 0 0 3px var(--focus-ring); }
+.kinput::placeholder { color: var(--faint); }
+
+.kcatpick { transition: border-color .15s ease, background .15s ease, transform .1s ease; }
+.kcatpick:hover { transform: translateY(-1px); }

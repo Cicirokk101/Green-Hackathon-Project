@@ -1,0 +1,35 @@
+/* ===== Karma spacing, radii, elevation ===== */
+:root {
+  /* spacing scale (4px base; named by use) */
+  --space-1: 4px;
+  --space-2: 8px;   /* inside chips / tight gaps */
+  --space-3: 12px;
+  --space-4: 16px;  /* card padding */
+  --space-5: 20px;
+  --space-6: 22px;  /* grid gap between cards */
+  --space-8: 28px;
+  --space-9: 36px;  /* page gutters */
+  --space-12: 48px;
+
+  /* radii */
+  --radius-sm:  9px;
+  --radius-md:  12px;  /* buttons, inputs */
+  --radius-lg:  18px;  /* small cards, stages */
+  --radius-xl:  22px;  /* project cards, heroes */
+  --radius-pill: 999px; /* chips, pills, avatars */
+
+  /* elevation */
+  --shadow-card:   0 6px 22px rgba(43, 34, 24, 0.08); /* resting card */
+  --shadow-lifted: 0 14px 34px rgba(43, 34, 24, 0.13); /* hover */
+  --shadow-pop:    0 14px 40px rgba(43, 34, 24, 0.16); /* frames, overlays */
+  --shadow-glow-orange: 0 6px 16px rgba(242, 106, 33, 0.35); /* primary button hover */
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0, 0.2, 1);
+  --dur-fast: 0.12s;
+  --dur: 0.16s;
+
+  /* layout */
+  --page-gutter: 36px;
+  --content-max: 1280px;
+}

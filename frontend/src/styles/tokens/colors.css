@@ -1,0 +1,64 @@
+/* ===== Karma color system ===== */
+:root {
+  /* --- base palette --- */
+  /* surfaces / neutrals (warm) */
+  --paper:        #FFF6EC; /* app background */
+  --card:         #FFFFFF; /* cards, sheets */
+  --border:       #EFEAE2; /* hairlines, progress tracks */
+  --border-warm:  #E4D8C4; /* warmer hairline on paper */
+  --ink:          #221A12; /* headings, dark surfaces */
+  --ink-2:        #3A2C1C; /* gradient partner for ink cards */
+  --text:         #3A2E20; /* default body on light */
+  --muted:        #6F6253; /* secondary text */
+  --faint:        #9A8C79; /* captions, hints, idle icons */
+
+  /* brand — orange leads */
+  --orange:       #F26A21; /* primary action */
+  --orange-deep:  #C75A12; /* hover / accent text */
+  --terra:        #C6532A; /* terracotta — repair, warmth */
+  --terra-deep:   #B5472A;
+  /* brand — green accents */
+  --leaf:         #1F8A52; /* gardens, progress fill */
+  --forest:       #2F6B45; /* deep green */
+  --leaf-bg:      #DCF3E4; /* green tint — skill chips */
+  /* brand — karma gold */
+  --gold:         #F7B53B; /* points, rewards */
+  --gold-deep:    #D99A2B;
+  --gold-text:    #7A4E07; /* text on gold */
+  /* tints */
+  --orange-bg:    #FFF1DF; /* soft orange surface */
+
+  /* category hues (map 1:1 to project types) */
+  --cat-garden:   #1F8A52;
+  --cat-cleanup:  #2F6B45;
+  --cat-repair:   #C6532A;
+  --cat-skill:    #D99A2B;
+  --cat-mutual:   #C6532A;
+
+  /* --- semantic aliases --- */
+  --bg-app:           var(--paper);
+  --surface-card:     var(--card);
+  --surface-inverse:  var(--ink);
+  --text-heading:     var(--ink);
+  --text-body:        var(--text);
+  --text-secondary:   var(--muted);
+  --text-caption:     var(--faint);
+  --text-on-brand:    #FFFFFF;
+  --border-default:   var(--border);
+
+  --action-primary:        var(--orange);
+  --action-primary-hover:  var(--orange-deep);
+  --action-secondary-bg:   var(--orange-bg);
+  --action-secondary-fg:   var(--orange-deep);
+  --action-dark:           var(--ink);
+
+  --accent-success:   var(--leaf);
+  --accent-reward:    var(--gold);
+  --focus-ring:       rgba(242, 106, 33, 0.14);
+
+  /* gradients */
+  --grad-hero:    linear-gradient(120deg, #F26A21, #F7943B);
+  --grad-logo:    linear-gradient(135deg, #F26A21, #F7B53B);
+  --grad-karma:   linear-gradient(150deg, #221A12, #3A2C1C);
+  --grad-reward:  linear-gradient(90deg, #F26A21, #F7B53B);
+}
