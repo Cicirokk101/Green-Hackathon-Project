@@ -1,13 +1,5 @@
-# ---- Frontend build ----
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm install
-COPY frontend/ ./
-RUN npm run build
-
-# ---- Backend ----
 FROM python:3.12-slim
+
 WORKDIR /app
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -21,8 +13,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 
 COPY backend/ ./backend/
-COPY --from=frontend-builder /app/frontend/dist ./backend/static/
 
+# Put the venv on PATH so `python` and all scripts resolve to the venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app/backend
