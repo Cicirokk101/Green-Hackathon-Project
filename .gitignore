@@ -14,18 +14,18 @@ build/
 venv/
 env/
 
-# Django
-*.log
-local_settings.py
+# Script PID files
+.pids/
+
+# SQLite dev database
 db.sqlite3
 db.sqlite3-journal
-backend/staticfiles/
-backend/media/
 
-# Environment
+# Environment & secrets — NEVER commit .secrets
 .env
 .env.local
 .env.*.local
+.secrets
 
 # Node / Frontend
 node_modules/
