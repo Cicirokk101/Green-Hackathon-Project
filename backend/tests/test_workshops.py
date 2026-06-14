@@ -244,37 +244,37 @@ class TestLeaveWorkshop:
 
 
 # ---------------------------------------------------------------------------
-# Join status  GET /api/workshops/{id}/join/me
+# Join status  GET /api/workshops/{id}/join/1
 # ---------------------------------------------------------------------------
 
 class TestJoinStatus:
     async def test_not_joined(self, client):
         w = (await client.post("/api/workshops", json=WORKSHOP_PAYLOAD)).json()
-        r = await client.get(f"/api/workshops/{w['id']}/join/me")
+        r = await client.get(f"/api/workshops/{w['id']}/join/1")
         assert r.status_code == 200
         assert r.json() == {"joined": False, "on_waitlist": False}
 
     async def test_joined(self, client):
         w = (await client.post("/api/workshops", json=WORKSHOP_PAYLOAD)).json()
         await client.post(f"/api/workshops/{w['id']}/join")
-        r = await client.get(f"/api/workshops/{w['id']}/join/me")
+        r = await client.get(f"/api/workshops/{w['id']}/join/1")
         assert r.json() == {"joined": True, "on_waitlist": False}
 
     async def test_on_waitlist(self, client):
         w = (await client.post("/api/workshops", json={**WORKSHOP_PAYLOAD, "seats": 0})).json()
         await client.post(f"/api/workshops/{w['id']}/join")
-        r = await client.get(f"/api/workshops/{w['id']}/join/me")
+        r = await client.get(f"/api/workshops/{w['id']}/join/1")
         assert r.json() == {"joined": True, "on_waitlist": True}
 
     async def test_left_shows_not_joined(self, client):
         w = (await client.post("/api/workshops", json=WORKSHOP_PAYLOAD)).json()
         await client.post(f"/api/workshops/{w['id']}/join")
         await client.delete(f"/api/workshops/{w['id']}/join")
-        r = await client.get(f"/api/workshops/{w['id']}/join/me")
+        r = await client.get(f"/api/workshops/{w['id']}/join/1")
         assert r.json() == {"joined": False, "on_waitlist": False}
 
     async def test_not_found(self, client):
-        r = await client.get("/api/workshops/9999/join/me")
+        r = await client.get("/api/workshops/9999/join/1")
         assert r.status_code == 404
 
 

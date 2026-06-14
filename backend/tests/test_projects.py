@@ -1,9 +1,9 @@
 from tests.conftest import PROJECT_PAYLOAD
 
-
 # ---------------------------------------------------------------------------
 # List projects  GET /api/projects
 # ---------------------------------------------------------------------------
+
 
 class TestListProjects:
     async def test_empty_returns_zero_total(self, client):
@@ -22,7 +22,10 @@ class TestListProjects:
 
     async def test_filter_by_category_matches(self, client):
         await client.post("/api/projects", json=PROJECT_PAYLOAD)
-        await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cat": "Cleanup", "title": "Park cleanup"})
+        await client.post(
+            "/api/projects",
+            json={**PROJECT_PAYLOAD, "cat": "Cleanup", "title": "Park cleanup"},
+        )
         r = await client.get("/api/projects?cat=Garden")
         data = r.json()
         assert data["total"] == 1
@@ -57,6 +60,7 @@ class TestListProjects:
 # Create project  POST /api/projects
 # ---------------------------------------------------------------------------
 
+
 class TestCreateProject:
     async def test_returns_201(self, client):
         r = await client.post("/api/projects", json=PROJECT_PAYLOAD)
@@ -88,11 +92,16 @@ class TestCreateProject:
             "Mutual aid": "heart",
         }
         for cat, expected_icon in mapping.items():
-            r = await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cat": cat, "title": f"{cat} project"})
+            r = await client.post(
+                "/api/projects",
+                json={**PROJECT_PAYLOAD, "cat": cat, "title": f"{cat} project"},
+            )
             assert r.json()["icon"] == expected_icon, f"Wrong icon for {cat}"
 
     async def test_invalid_cat_returns_422(self, client):
-        r = await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cat": "Unknown"})
+        r = await client.post(
+            "/api/projects", json={**PROJECT_PAYLOAD, "cat": "Unknown"}
+        )
         assert r.status_code == 422
 
     async def test_optional_desc_can_be_omitted(self, client):
@@ -108,13 +117,16 @@ class TestCreateProject:
 
     async def test_multiple_projects_get_unique_ids(self, client):
         r1 = await client.post("/api/projects", json=PROJECT_PAYLOAD)
-        r2 = await client.post("/api/projects", json={**PROJECT_PAYLOAD, "title": "Another"})
+        r2 = await client.post(
+            "/api/projects", json={**PROJECT_PAYLOAD, "title": "Another"}
+        )
         assert r1.json()["id"] != r2.json()["id"]
 
 
 # ---------------------------------------------------------------------------
 # Join project  POST /api/projects/{id}/join
 # ---------------------------------------------------------------------------
+
 
 class TestJoinProject:
     async def test_join_returns_success_true(self, client):
@@ -129,7 +141,9 @@ class TestJoinProject:
         assert r.json()["joined"] == 1
 
     async def test_join_pct_calculation(self, client):
-        p = (await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cap": 4})).json()
+        p = (
+            await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cap": 4})
+        ).json()
         r = await client.post(f"/api/projects/{p['id']}/join")
         assert r.json()["pct"] == 25  # 1/4 * 100
 
@@ -139,7 +153,9 @@ class TestJoinProject:
         assert r.json()["pct"] == 10  # 1/10 * 100
 
     async def test_join_zero_cap_pct_is_zero(self, client):
-        p = (await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cap": 0})).json()
+        p = (
+            await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cap": 0})
+        ).json()
         r = await client.post(f"/api/projects/{p['id']}/join")
         assert r.status_code == 200
         assert r.json()["pct"] == 0
@@ -166,6 +182,7 @@ class TestJoinProject:
 # ---------------------------------------------------------------------------
 # Bookmark  POST /api/projects/{id}/bookmark
 # ---------------------------------------------------------------------------
+
 
 class TestBookmarkProject:
     async def test_first_call_bookmarks(self, client):

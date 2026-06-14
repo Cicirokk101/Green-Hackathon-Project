@@ -22,8 +22,13 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     password_hash: Mapped[str] = mapped_column()
     karma_points: Mapped[int] = mapped_column(default=0)
+    handle: Mapped[str | None] = mapped_column(default=None)
+    location: Mapped[str | None] = mapped_column(default=None)
+    bio: Mapped[str | None] = mapped_column(Text, default=None)
+    helping_status: Mapped[str | None] = mapped_column(default=None)
     skills: Mapped[Any] = mapped_column(JSON, default=list)
     interests: Mapped[Any] = mapped_column(JSON, default=list)
+    badges: Mapped[Any] = mapped_column(JSON, default=list)
     onboarding_complete: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
@@ -61,6 +66,7 @@ class Project(Base):
     karma: Mapped[int] = mapped_column()
     host_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     cap: Mapped[int] = mapped_column()
+    status: Mapped[str] = mapped_column(default="active")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     host: Mapped[User] = relationship(

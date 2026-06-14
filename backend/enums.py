@@ -14,3 +14,8 @@ class WorkshopLevel(StrEnum):
     INTERMEDIATE = "Intermediate"
     ADVANCED = "Advanced"
     ALL_LEVELS = "All levels"
+
+
+class ProjectStatus(StrEnum):
+    ACTIVE = "active"
+    DRAFT = "draft"

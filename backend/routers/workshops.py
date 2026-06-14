@@ -225,9 +225,10 @@ async def leave_workshop(
     return LeaveWorkshopResponse(success=True, seats_left=max(0, workshop.seats - taken))
 
 
-@router.get("/{workshop_id}/join/me", response_model=JoinStatusResponse)
+@router.get("/{workshop_id}/join/{user_id}", response_model=JoinStatusResponse)
 async def join_status(
     workshop_id: int,
+    user_id: int,
     db: AsyncSession = Depends(get_db),
 ) -> JoinStatusResponse:
     workshop = await db.get(Workshop, workshop_id)
@@ -237,7 +238,7 @@ async def join_status(
     membership = await db.scalar(
         select(WorkshopMembership).where(
             WorkshopMembership.workshop_id == workshop_id,
-            WorkshopMembership.user_id == STUB_USER_ID,
+            WorkshopMembership.user_id == user_id,
         )
     )
     if not membership:
