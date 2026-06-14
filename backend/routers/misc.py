@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,11 +10,13 @@ router = APIRouter(tags=["misc"])
 
 
 class SkillRequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     skill: str
     count: int
 
 
 class ResourceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     title: str
     description: str
@@ -28,7 +30,7 @@ async def list_skill_requests(db: AsyncSession = Depends(get_db)) -> list[SkillR
     rows = (await db.execute(
         select(SkillRequest).order_by(SkillRequest.count.desc())
     )).scalars().all()
-    return [SkillRequestOut(skill=r.skill, count=r.count) for r in rows]
+    return [SkillRequestOut.model_validate(r) for r in rows]
 
 
 @router.get("/api/resources", response_model=list[ResourceOut])
@@ -36,4 +38,4 @@ async def list_resources(db: AsyncSession = Depends(get_db)) -> list[ResourceOut
     rows = (await db.execute(
         select(Resource).order_by(Resource.order)
     )).scalars().all()
-    return [ResourceOut(id=r.id, title=r.title, description=r.description, source=r.source, icon=r.icon, order=r.order) for r in rows]
+    return [ResourceOut.model_validate(r) for r in rows]

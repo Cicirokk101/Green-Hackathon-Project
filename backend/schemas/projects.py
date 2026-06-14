@@ -1,11 +1,15 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
+
+from enums import Category
 
 
 class ProjectCreate(BaseModel):
-    cat: str
+    cat: Category
     title: str
     desc: str | None = None
-    when: str
+    when: datetime
     place: str
     cap: int
     karma: int
@@ -15,21 +19,22 @@ class ProjectOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    cat: str
+    cat: Category
     icon: str
     title: str
     desc: str | None
     place: str
-    when: str
+    when: datetime
     karma: int
-    host: str
+    host_id: int
+    host_initials: str
     host_name: str
-    dist: str
     joined: int
     cap: int
     pct: int
     bookmarked: bool
     is_mine: bool
+    created_at: datetime
 
 
 class ProjectListOut(BaseModel):

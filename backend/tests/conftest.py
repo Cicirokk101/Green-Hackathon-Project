@@ -1,7 +1,6 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from database import Base, get_db
@@ -14,7 +13,7 @@ PROJECT_PAYLOAD: dict = {
     "cat": "Garden",
     "title": "Build a community garden",
     "desc": "Help us dig and plant!",
-    "when": "Saturday 10am",
+    "when": "2026-07-05T10:00:00+00:00",
     "place": "Elm St.",
     "cap": 10,
     "karma": 40,
@@ -23,7 +22,7 @@ PROJECT_PAYLOAD: dict = {
 WORKSHOP_PAYLOAD: dict = {
     "skill": "Sourdough basics",
     "cat": "Skill-share",
-    "when": "Sunday 2pm",
+    "when": "2026-07-06T14:00:00+00:00",
     "place": "Community Center",
     "seats": 8,
     "level": "Beginner",
@@ -40,9 +39,8 @@ async def client():
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    factory = sessionmaker(eng, class_=AsyncSession, expire_on_commit=False)
+    factory = async_sessionmaker(eng, expire_on_commit=False)
 
-    # Seed STUB_USER_ID=1, required by all endpoint handlers
     async with factory() as session:
         session.add(User(
             name="Test User",
@@ -50,7 +48,6 @@ async def client():
             email="test@example.com",
             password_hash="hashed",
             karma_points=100,
-            level=1,
         ))
         await session.commit()
 

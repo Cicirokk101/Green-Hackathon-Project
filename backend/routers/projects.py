@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import get_db
+from enums import Category
 from models import Project, ProjectBookmark, ProjectMembership
 from schemas.projects import (
     BookmarkResponse, JoinProjectResponse,
@@ -22,26 +23,27 @@ def _build_project_out(project: Project, joined: int, bookmarked: bool, user_id:
     return ProjectOut(
         id=project.id,
         cat=project.cat,
-        icon=project.icon,
+        icon=CAT_ICON[Category(project.cat)],
         title=project.title,
         desc=project.desc,
         place=project.place,
         when=project.when,
         karma=project.karma,
-        host=project.host.initials,
+        host_id=project.host_id,
+        host_initials=project.host.initials,
         host_name=project.host.name,
-        dist=project.dist,
         joined=joined,
         cap=project.cap,
         pct=pct,
         bookmarked=bookmarked,
         is_mine=project.host_id == user_id,
+        created_at=project.created_at,
     )
 
 
 @router.get("", response_model=ProjectListOut)
 async def list_projects(
-    cat: str | None = None,
+    cat: Category | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> ProjectListOut:
     q = select(Project).options(selectinload(Project.host))
@@ -72,13 +74,11 @@ async def create_project(
 ) -> ProjectOut:
     project = Project(
         cat=body.cat,
-        icon=CAT_ICON.get(body.cat, "sprout"),
         title=body.title,
         desc=body.desc,
         place=body.place,
         when=body.when,
         karma=body.karma,
-        dist="0.0 mi",
         cap=body.cap,
         host_id=STUB_USER_ID,
     )
@@ -100,7 +100,7 @@ async def join_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    cap = project.cap  # read before commit expires the object
+    cap = project.cap
 
     try:
         db.add(ProjectMembership(project_id=project_id, user_id=STUB_USER_ID))

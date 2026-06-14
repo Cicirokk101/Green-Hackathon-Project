@@ -48,8 +48,9 @@ class TestListProjects:
     async def test_host_info_present(self, client):
         await client.post("/api/projects", json=PROJECT_PAYLOAD)
         item = (await client.get("/api/projects")).json()["items"][0]
-        assert item["host"] == "TU"
+        assert item["host_initials"] == "TU"
         assert item["host_name"] == "Test User"
+        assert item["host_id"] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -90,9 +91,9 @@ class TestCreateProject:
             r = await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cat": cat, "title": f"{cat} project"})
             assert r.json()["icon"] == expected_icon, f"Wrong icon for {cat}"
 
-    async def test_unknown_cat_defaults_to_sprout(self, client):
+    async def test_invalid_cat_returns_422(self, client):
         r = await client.post("/api/projects", json={**PROJECT_PAYLOAD, "cat": "Unknown"})
-        assert r.json()["icon"] == "sprout"
+        assert r.status_code == 422
 
     async def test_optional_desc_can_be_omitted(self, client):
         payload = {k: v for k, v in PROJECT_PAYLOAD.items() if k != "desc"}

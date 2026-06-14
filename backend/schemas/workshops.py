@@ -1,13 +1,26 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict
+
+from enums import Category, WorkshopLevel
 
 
 class WorkshopCreate(BaseModel):
     skill: str
-    cat: str
-    when: str
+    cat: Category
+    when: datetime
     place: str
     seats: int
-    level: str
+    level: WorkshopLevel
+
+
+class WorkshopUpdate(BaseModel):
+    skill: str | None = None
+    cat: Category | None = None
+    when: datetime | None = None
+    place: str | None = None
+    seats: int | None = None
+    level: WorkshopLevel | None = None
 
 
 class WorkshopOut(BaseModel):
@@ -15,22 +28,34 @@ class WorkshopOut(BaseModel):
 
     id: int
     skill: str
-    cat: str
+    cat: Category
     icon: str
-    host: str
+    host_id: int
+    host_initials: str
     host_name: str
-    when: str
+    when: datetime
     place: str
     seats: int
     taken: int
     seats_left: int
-    level: str
+    level: WorkshopLevel
     full: bool
     attending: bool
     is_mine: bool
+    created_at: datetime
 
 
 class JoinWorkshopResponse(BaseModel):
     success: bool
     on_waitlist: bool
     seats_left: int
+
+
+class LeaveWorkshopResponse(BaseModel):
+    success: bool
+    seats_left: int
+
+
+class JoinStatusResponse(BaseModel):
+    joined: bool
+    on_waitlist: bool
