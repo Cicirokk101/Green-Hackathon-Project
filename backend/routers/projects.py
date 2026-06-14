@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import get_db
-from enums import Category
+from enums import Category, ProjectStatus
 from models import Project, ProjectBookmark, ProjectMembership
 from schemas.projects import (
     BookmarkResponse, JoinProjectResponse,
@@ -37,6 +37,7 @@ def _build_project_out(project: Project, joined: int, bookmarked: bool, user_id:
         pct=pct,
         bookmarked=bookmarked,
         is_mine=project.host_id == user_id,
+        status=project.status,
         created_at=project.created_at,
     )
 
@@ -44,11 +45,23 @@ def _build_project_out(project: Project, joined: int, bookmarked: bool, user_id:
 @router.get("", response_model=ProjectListOut)
 async def list_projects(
     cat: Category | None = None,
+    host_id: int | None = None,
+    joined_by: int | None = None,
+    status: ProjectStatus | None = None,
     db: AsyncSession = Depends(get_db),
 ) -> ProjectListOut:
     q = select(Project).options(selectinload(Project.host))
     if cat:
         q = q.where(Project.cat == cat)
+    if host_id is not None:
+        q = q.where(Project.host_id == host_id)
+    if status is not None:
+        q = q.where(Project.status == status)
+    if joined_by is not None:
+        joined_ids = select(ProjectMembership.project_id).where(
+            ProjectMembership.user_id == joined_by
+        )
+        q = q.where(Project.id.in_(joined_ids))
     projects = (await db.execute(q)).scalars().all()
 
     items = []
@@ -80,6 +93,7 @@ async def create_project(
         when=body.when,
         karma=body.karma,
         cap=body.cap,
+        status=body.status,
         host_id=STUB_USER_ID,
     )
     db.add(project)

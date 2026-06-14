@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from enums import Category
+from enums import Category, ProjectStatus
 
 
 class ProjectCreate(BaseModel):
@@ -13,6 +13,7 @@ class ProjectCreate(BaseModel):
     place: str
     cap: int
     karma: int
+    status: ProjectStatus = ProjectStatus.ACTIVE
 
 
 class ProjectOut(BaseModel):
@@ -34,6 +35,7 @@ class ProjectOut(BaseModel):
     pct: int
     bookmarked: bool
     is_mine: bool
+    status: ProjectStatus
     created_at: datetime
 
 
