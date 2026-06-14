@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { getMe, updateSkills } from "../lib/api";
 
 type CSS = React.CSSProperties;
 
@@ -351,9 +352,18 @@ export default function KarmaProfile(): React.ReactElement {
     skills: ["Carpentry", "Gardening", "First aid"],
   });
   const [helping, setHelping] = useState<boolean>(true);
-  const [karma] = useState<number>(1240);
+  const [karma, setKarma] = useState<number>(1240);
   const [gardenHours] = useState<number>(8);
   const [cleanupHours] = useState<number>(4);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => {
+        setProfile((p) => ({ ...p, name: me.name, skills: me.skills }));
+        setKarma(me.karma_points);
+      })
+      .catch(() => {});
+  }, []);
 
   const [tab, setTab] = useState<Tab>("joined");
   const [open, setOpen] = useState<OpenState>({
@@ -402,6 +412,7 @@ export default function KarmaProfile(): React.ReactElement {
       bio: draft.bio,
       skills: draft.skills,
     }));
+    updateSkills(draft.skills).catch(() => {});
     closeEdit();
   };
   const addSkill = (): void => {

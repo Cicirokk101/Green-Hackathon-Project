@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FilterRow, type FilterName } from "../components/FilterRow";
 import { KarmaCard } from "../components/cards/KarmaCard";
@@ -8,29 +8,7 @@ import { SkillsCard } from "../components/cards/SkillsCard";
 import { Hero } from "../components/layout/Hero";
 import { Icon } from "../lib/icons";
 import { K, type CategoryName } from "../lib/karma";
-
-const PROJECTS: Project[] = [
-  {
-    cat: "Garden", icon: "sprout", place: "Riverside lot", karma: 40, host: "DA", hostName: "Dana A.",
-    dist: "0.3 mi", when: "Sat 9am", title: "Build raised beds at the Elm St. lot", joined: 6, cap: 10, pct: 60,
-  },
-  {
-    cat: "Repair", icon: "wrench", place: "Tool library", karma: 25, host: "JK", hostName: "Jordan K.",
-    dist: "0.6 mi", when: "Sun 2pm", title: "Fix-it café: lamps, chairs & bikes", joined: 3, cap: 8, pct: 38,
-  },
-  {
-    cat: "Cleanup", icon: "trend", place: "Creek path", karma: 30, host: "PL", hostName: "Priya L.",
-    dist: "1.1 mi", when: "Sat 8am", title: "Creek & trail litter sweep", joined: 12, cap: 20, pct: 60,
-  },
-  {
-    cat: "Skill-share", icon: "bulb", place: "Library room B", karma: 20, host: "SM", hostName: "Sam M.",
-    dist: "0.9 mi", when: "Wed 6pm", title: "Teach & learn: bike maintenance", joined: 5, cap: 12, pct: 42,
-  },
-  {
-    cat: "Mutual aid", icon: "heart", place: "Oak Ave.", karma: 15, host: "TN", hostName: "Tomas N.",
-    dist: "0.4 mi", when: "Sun 10am", title: "Help Mr. Ortiz prep his yard", joined: 2, cap: 4, pct: 50,
-  },
-];
+import { bookmarkProject, deleteProject, getProjects, joinProject, leaveProject, type ProjectDTO } from "../lib/api";
 
 const CATEGORY_BY_FILTER: Partial<Record<FilterName, CategoryName>> = {
   Gardens: "Garden",
@@ -40,10 +18,123 @@ const CATEGORY_BY_FILTER: Partial<Record<FilterName, CategoryName>> = {
   "Mutual aid": "Mutual aid",
 };
 
+const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  const day = WEEKDAYS[d.getDay()];
+  let h = d.getHours();
+  const ampm = h >= 12 ? "pm" : "am";
+  h = h % 12 || 12;
+  const m = d.getMinutes();
+  const time = m === 0 ? `${h}${ampm}` : `${h}:${String(m).padStart(2, "0")}${ampm}`;
+  return `${day} ${time}`;
+}
+
+function toProject(dto: ProjectDTO): Project {
+  return {
+    id: dto.id,
+    cat: dto.cat,
+    icon: dto.icon,
+    place: dto.place,
+    karma: dto.karma,
+    host: dto.host_initials,
+    hostName: dto.host_name,
+    when: formatWhen(dto.when),
+    title: dto.title,
+    joined: dto.joined,
+    cap: dto.cap,
+    pct: dto.pct,
+    bookmarked: dto.bookmarked,
+    joinedByMe: dto.joined_by_me,
+    isMine: dto.is_mine,
+  };
+}
+
 export function ProjectsPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterName>("All");
-  const shown = filter === "All" ? PROJECTS : PROJECTS.filter((p) => p.cat === CATEGORY_BY_FILTER[filter]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
+  const [joiningIds, setJoiningIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    getProjects(CATEGORY_BY_FILTER[filter])
+      .then((data) => {
+        if (cancelled) return;
+        setProjects(data.items.map(toProject));
+        setJoinedIds(new Set(data.items.filter((d) => d.joined_by_me).map((d) => d.id)));
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [filter]);
+
+  async function handleJoin(id: number) {
+    if (joinedIds.has(id) || joiningIds.has(id)) return;
+    setJoiningIds((s) => new Set(s).add(id));
+    try {
+      const res = await joinProject(id);
+      setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, joined: res.joined, pct: res.pct } : p)));
+      setJoinedIds((s) => new Set(s).add(id));
+    } finally {
+      setJoiningIds((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function handleLeave(id: number) {
+    if (joiningIds.has(id)) return;
+    setJoiningIds((s) => new Set(s).add(id));
+    try {
+      const res = await leaveProject(id);
+      setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, joined: res.joined, pct: res.pct } : p)));
+      setJoinedIds((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    } finally {
+      setJoiningIds((s) => {
+        const next = new Set(s);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!window.confirm("Delete this project? This can't be undone.")) return;
+    try {
+      await deleteProject(id);
+      setProjects((ps) => ps.filter((p) => p.id !== id));
+    } catch {
+      window.alert("Couldn't delete this project. Try again later.");
+    }
+  }
+
+  async function handleBookmark(id: number) {
+    setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p)));
+    try {
+      await bookmarkProject(id);
+    } catch {
+      setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p)));
+    }
+  }
 
   return (
     <div>
@@ -82,10 +173,23 @@ export function ProjectsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 28, padding: "16px 36px 44px", alignItems: "start" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
-          {shown.map((p, i) => (
-            <ProjectCard key={i} p={p} />
-          ))}
-          {shown.length === 0 && <div style={{ color: K.muted, padding: 40 }}>No projects in this category yet.</div>}
+          {loading && <div style={{ color: K.muted, padding: 40 }}>Loading projects…</div>}
+          {!loading && error && <div style={{ color: K.terra, padding: 40 }}>Couldn't load projects. Try again later.</div>}
+          {!loading && !error && projects.length === 0 && <div style={{ color: K.muted, padding: 40 }}>No projects in this category yet.</div>}
+          {!loading &&
+            !error &&
+            projects.map((p) => (
+              <ProjectCard
+                key={p.id}
+                p={p}
+                onJoin={() => handleJoin(p.id)}
+                onLeave={() => handleLeave(p.id)}
+                onBookmark={() => handleBookmark(p.id)}
+                onDelete={() => handleDelete(p.id)}
+                joining={joiningIds.has(p.id)}
+                hasJoined={joinedIds.has(p.id)}
+              />
+            ))}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <KarmaCard />

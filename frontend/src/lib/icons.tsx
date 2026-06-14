@@ -35,6 +35,7 @@ const PATHS = {
   gift: "M12 8v13M4 12h16M5 8h14v13H5zM12 8S10 3 7.5 3 5 6 5 6s2 2 7 2zM12 8s2-5 4.5-5S19 6 19 6s-2 2-7 2z",
   flag: "M5 21V4h11l-2 4 2 4H5",
   shield: "M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z",
+  trash: "M4 7h16M9 7V4h6v3M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13M10 11v6M14 11v6",
 } as const;
 
 export type IconName = keyof typeof PATHS;

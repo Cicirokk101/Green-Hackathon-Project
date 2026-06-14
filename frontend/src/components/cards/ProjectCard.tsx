@@ -8,21 +8,34 @@ import { KarmaBadge } from "../ui/Badge";
 import { Progress } from "../ui/Progress";
 
 export interface Project {
+  id: number;
   cat: CategoryName;
   icon: IconName;
   place: string;
   karma: number;
   host: string;
   hostName: string;
-  dist: string;
   when: string;
   title: string;
   joined: number;
   cap: number;
   pct: number;
+  bookmarked: boolean;
+  joinedByMe: boolean;
+  isMine: boolean;
 }
 
-export function ProjectCard({ p }: { p: Project }) {
+interface ProjectCardProps {
+  p: Project;
+  onJoin?: () => void;
+  onLeave?: () => void;
+  onBookmark?: () => void;
+  onDelete?: () => void;
+  joining?: boolean;
+  hasJoined?: boolean;
+}
+
+export function ProjectCard({ p, onJoin, onLeave, onBookmark, onDelete, joining, hasJoined }: ProjectCardProps) {
   const cat = CAT[p.cat] || CAT.Garden;
   return (
     <div className="kcard" style={{ background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: K.shadow }}>
@@ -54,7 +67,7 @@ export function ProjectCard({ p }: { p: Project }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
           <Avatar initials={p.host} size={26} />
           <span style={{ fontSize: 13, color: K.muted }}>
-            {p.hostName} · {p.dist} · {p.when}
+            {p.hostName} · {p.when}
           </span>
         </div>
         <div style={{ marginBottom: 14 }}>
@@ -64,10 +77,11 @@ export function ProjectCard({ p }: { p: Project }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="primary" full>
-            Join
+          <Button variant={hasJoined ? "ghost" : "primary"} full onClick={hasJoined ? onLeave : onJoin}>
+            {joining ? "..." : hasJoined ? "Joined" : "Join"}
           </Button>
-          <IconButton name="bookmark" />
+          <IconButton name="bookmark" active={p.bookmarked} onClick={onBookmark} />
+          {p.isMine && <IconButton name="trash" onClick={onDelete} />}
         </div>
       </div>
     </div>
