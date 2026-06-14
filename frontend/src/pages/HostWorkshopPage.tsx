@@ -1,6 +1,10 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import type { Dayjs } from "dayjs";
 import { Avatar } from "../components/ui/Avatar";
 import { Button } from "../components/ui/Button";
 import { Select, TextArea, TextInput } from "../components/ui/formControls";
@@ -23,7 +27,7 @@ interface WorkshopForm {
   cat: CategoryName;
   skill: string;
   desc: string;
-  when: string;
+  when: Dayjs | null;
   place: string;
   seats: string;
   level: string;
@@ -148,7 +152,7 @@ function PreviewCard({ f }: { f: WorkshopForm }) {
           {f.when && (
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Icon name="cal" size={14} color={K.faint} />
-              {f.when}
+              {f.when.format("ddd · MMM D · h:mma")}
             </span>
           )}
           {f.place && (
@@ -174,7 +178,7 @@ export function HostWorkshopPage() {
     cat: "Skill-share",
     skill: "",
     desc: "",
-    when: "",
+    when: null,
     place: "",
     seats: "8",
     level: "Beginner",
@@ -192,7 +196,7 @@ export function HostWorkshopPage() {
       await createWorkshop({
         skill: f.skill,
         category: f.cat,
-        when: f.when,
+        when: f.when ? f.when.format("ddd · MMM D · h:mma") : "",
         place: f.place,
         seats: Number(f.seats),
         level: f.level,
@@ -255,7 +259,19 @@ export function HostWorkshopPage() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <Field label="When">
-              <TextInput value={f.when} onChange={set("when")} placeholder="Sat · Jun 21 · 10am" />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateTimePicker
+                  value={f.when}
+                  onChange={(val) => setF({ ...f, when: val })}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      fullWidth: true,
+                      placeholder: "Sat · Jun 21 · 10am",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
             </Field>
             <Field label="Where">
               <TextInput value={f.place} onChange={set("place")} placeholder="Tool Library, Elm St. lot…" />
