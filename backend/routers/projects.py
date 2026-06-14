@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -8,7 +8,7 @@ from database import get_db
 from enums import Category
 from models import Project, ProjectBookmark, ProjectMembership
 from schemas.projects import (
-    BookmarkResponse, JoinProjectResponse,
+    BookmarkResponse, JoinProjectResponse, LeaveProjectResponse,
     ProjectCreate, ProjectListOut, ProjectOut,
 )
 from utils.karma import CAT_ICON
@@ -18,7 +18,9 @@ router = APIRouter(prefix="/api/projects", tags=["projects"])
 STUB_USER_ID = 1
 
 
-def _build_project_out(project: Project, joined: int, bookmarked: bool, user_id: int) -> ProjectOut:
+def _build_project_out(
+    project: Project, joined: int, bookmarked: bool, joined_by_me: bool, user_id: int
+) -> ProjectOut:
     pct = int(joined / project.cap * 100) if project.cap else 0
     return ProjectOut(
         id=project.id,
@@ -37,8 +39,19 @@ def _build_project_out(project: Project, joined: int, bookmarked: bool, user_id:
         pct=pct,
         bookmarked=bookmarked,
         is_mine=project.host_id == user_id,
+        joined_by_me=joined_by_me,
         created_at=project.created_at,
     )
+
+
+async def _is_joined(db: AsyncSession, project_id: int, user_id: int) -> bool:
+    count = await db.scalar(
+        select(func.count()).where(
+            ProjectMembership.project_id == project_id,
+            ProjectMembership.user_id == user_id,
+        )
+    ) or 0
+    return bool(count)
 
 
 @router.get("", response_model=ProjectListOut)
@@ -62,7 +75,8 @@ async def list_projects(
                 ProjectBookmark.user_id == STUB_USER_ID,
             )
         ) or 0
-        items.append(_build_project_out(p, joined, bool(bookmarked), STUB_USER_ID))
+        joined_by_me = await _is_joined(db, p.id, STUB_USER_ID)
+        items.append(_build_project_out(p, joined, bool(bookmarked), joined_by_me, STUB_USER_ID))
 
     return ProjectListOut(total=len(items), items=items)
 
@@ -88,7 +102,25 @@ async def create_project(
         select(Project).options(selectinload(Project.host)).where(Project.id == project.id)
     )
     project = result.scalar_one()
-    return _build_project_out(project, 0, False, STUB_USER_ID)
+    return _build_project_out(project, 0, False, False, STUB_USER_ID)
+
+
+@router.delete("/{project_id}", status_code=204)
+async def delete_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if project.host_id != STUB_USER_ID:
+        raise HTTPException(status_code=403, detail="Only the host can delete this project")
+
+    await db.execute(delete(ProjectMembership).where(ProjectMembership.project_id == project_id))
+    await db.execute(delete(ProjectBookmark).where(ProjectBookmark.project_id == project_id))
+    await db.delete(project)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/{project_id}/join", response_model=JoinProjectResponse)
@@ -113,6 +145,30 @@ async def join_project(
     ) or 0
     pct = int(joined / cap * 100) if cap else 0
     return JoinProjectResponse(success=True, joined=joined, pct=pct)
+
+
+@router.delete("/{project_id}/join", response_model=LeaveProjectResponse)
+async def leave_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> LeaveProjectResponse:
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await db.execute(
+        delete(ProjectMembership).where(
+            ProjectMembership.project_id == project_id,
+            ProjectMembership.user_id == STUB_USER_ID,
+        )
+    )
+    await db.commit()
+
+    joined = await db.scalar(
+        select(func.count()).where(ProjectMembership.project_id == project_id)
+    ) or 0
+    pct = int(joined / project.cap * 100) if project.cap else 0
+    return LeaveProjectResponse(success=True, joined=joined, pct=pct)
 
 
 @router.post("/{project_id}/bookmark", response_model=BookmarkResponse)

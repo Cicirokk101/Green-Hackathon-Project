@@ -34,6 +34,7 @@ class ProjectOut(BaseModel):
     pct: int
     bookmarked: bool
     is_mine: bool
+    joined_by_me: bool
     created_at: datetime
 
 
@@ -43,6 +44,12 @@ class ProjectListOut(BaseModel):
 
 
 class JoinProjectResponse(BaseModel):
+    success: bool
+    joined: int
+    pct: int
+
+
+class LeaveProjectResponse(BaseModel):
     success: bool
     joined: int
     pct: int

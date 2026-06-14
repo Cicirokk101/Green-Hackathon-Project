@@ -9,6 +9,7 @@ import { CategoryTag } from "../components/ui/Tag";
 import { Progress } from "../components/ui/Progress";
 import { Icon, type IconName } from "../lib/icons";
 import { CAT, K, type CategoryName } from "../lib/karma";
+import { createProject, type ProjectCreateDTO } from "../lib/api";
 
 const CATS: CategoryName[] = ["Garden", "Cleanup", "Repair", "Skill-share", "Mutual aid"];
 const CAT_ICON: Record<CategoryName, IconName> = {
@@ -113,6 +114,33 @@ export function StartPage() {
   const [f, setF] = useState<ProjectForm>({ cat: "Garden", title: "", desc: "", when: "", place: "", cap: "8", karma: "25" });
   const set = (k: keyof ProjectForm) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setF({ ...f, [k]: e.target.value });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePost() {
+    if (!f.title.trim() || !f.place.trim() || !f.when) {
+      setError("Please add a title, location, and time before posting.");
+      return;
+    }
+    setError(null);
+    setSubmitting(true);
+    try {
+      const body: ProjectCreateDTO = {
+        cat: f.cat,
+        title: f.title.trim(),
+        desc: f.desc.trim() || null,
+        when: new Date(f.when).toISOString(),
+        place: f.place.trim(),
+        cap: Number(f.cap),
+        karma: Number(f.karma),
+      };
+      await createProject(body);
+      navigate("/");
+    } catch {
+      setError("Couldn't post this project. Try again.");
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 36px 64px" }}>
@@ -140,7 +168,7 @@ export function StartPage() {
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
             <Field label="When">
-              <TextInput value={f.when} onChange={set("when")} placeholder="Sat · 9am" />
+              <TextInput type="datetime-local" value={f.when} onChange={set("when")} />
             </Field>
             <Field label="Where">
               <TextInput value={f.place} onChange={set("place")} placeholder="Elm St. lot" />
@@ -154,9 +182,10 @@ export function StartPage() {
               <Select value={f.karma} onChange={set("karma")} options={["10", "15", "20", "25", "30", "40"]} />
             </Field>
           </div>
+          {error && <div style={{ fontSize: 13, color: K.terra, fontWeight: 600, marginBottom: 12 }}>{error}</div>}
           <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-            <Button variant="primary" size="lg" icon="check" onClick={() => navigate("/")}>
-              Post project
+            <Button variant="primary" size="lg" icon="check" onClick={handlePost} disabled={submitting}>
+              {submitting ? "Posting…" : "Post project"}
             </Button>
             <Button variant="ghost" size="lg" onClick={() => navigate("/")}>
               Save draft
