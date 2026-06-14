@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FilterRow, type FilterName } from "../components/FilterRow";
 import { KarmaCard } from "../components/cards/KarmaCard";
@@ -8,6 +8,29 @@ import { SkillsCard } from "../components/cards/SkillsCard";
 import { Hero } from "../components/layout/Hero";
 import { Icon } from "../lib/icons";
 import { K, type CategoryName } from "../lib/karma";
+
+const PROJECTS: Project[] = [
+  {
+    cat: "Garden", icon: "sprout", place: "Riverside lot", karma: 40, host: "DA", hostName: "Dana A.",
+    dist: "0.3 mi", when: "Sat 9am", title: "Build raised beds at the Elm St. lot", joined: 6, cap: 10, pct: 60,
+  },
+  {
+    cat: "Repair", icon: "wrench", place: "Tool library", karma: 25, host: "JK", hostName: "Jordan K.",
+    dist: "0.6 mi", when: "Sun 2pm", title: "Fix-it café: lamps, chairs & bikes", joined: 3, cap: 8, pct: 38,
+  },
+  {
+    cat: "Cleanup", icon: "trend", place: "Creek path", karma: 30, host: "PL", hostName: "Priya L.",
+    dist: "1.1 mi", when: "Sat 8am", title: "Creek & trail litter sweep", joined: 12, cap: 20, pct: 60,
+  },
+  {
+    cat: "Skill-share", icon: "bulb", place: "Library room B", karma: 20, host: "SM", hostName: "Sam M.",
+    dist: "0.9 mi", when: "Wed 6pm", title: "Teach & learn: bike maintenance", joined: 5, cap: 12, pct: 42,
+  },
+  {
+    cat: "Mutual aid", icon: "heart", place: "Oak Ave.", karma: 15, host: "TN", hostName: "Tomas N.",
+    dist: "0.4 mi", when: "Sun 10am", title: "Help Mr. Ortiz prep his yard", joined: 2, cap: 4, pct: 50,
+  },
+];
 
 const CATEGORY_BY_FILTER: Partial<Record<FilterName, CategoryName>> = {
   Gardens: "Garden",
@@ -20,26 +43,7 @@ const CATEGORY_BY_FILTER: Partial<Record<FilterName, CategoryName>> = {
 export function ProjectsPage() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterName>("All");
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const cat = CATEGORY_BY_FILTER[filter];
-    const url = cat ? `/api/projects?cat=${encodeURIComponent(cat)}` : "/api/projects";
-    setLoading(true);
-    fetch(url)
-      .then((r) => r.json())
-      .then((data) => {
-        const items: Project[] = data.items.map((p: any) => ({
-          ...p,
-          hostName: p.host_name,
-        }));
-        setProjects(items);
-      })
-      .finally(() => setLoading(false));
-  }, [filter]);
-
-  const shown = projects;
+  const shown = filter === "All" ? PROJECTS : PROJECTS.filter((p) => p.cat === CATEGORY_BY_FILTER[filter]);
 
   return (
     <div>
@@ -78,11 +82,10 @@ export function ProjectsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 28, padding: "16px 36px 44px", alignItems: "start" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
-          {loading && <div style={{ color: K.muted, padding: 40 }}>Loading…</div>}
-          {!loading && shown.map((p, i) => (
+          {shown.map((p, i) => (
             <ProjectCard key={i} p={p} />
           ))}
-          {!loading && shown.length === 0 && <div style={{ color: K.muted, padding: 40 }}>No projects in this category yet.</div>}
+          {shown.length === 0 && <div style={{ color: K.muted, padding: 40 }}>No projects in this category yet.</div>}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <KarmaCard />

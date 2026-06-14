@@ -2,11 +2,10 @@ import { Route, Routes } from "react-router-dom";
 import { TopNav } from "./components/layout/TopNav";
 import { K } from "./lib/karma";
 import { CommunityPage } from "./pages/CommunityPage";
-import { ProfilePage } from "./pages/ProfilePage";
+import Profile from "./pages/Profile";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ResourcesPage } from "./pages/ResourcesPage";
 import { StartPage } from "./pages/StartPage";
-import { StartWorkshopPage } from "./pages/StartWorkshopPage";
 
 function App() {
   return (
@@ -17,8 +16,7 @@ function App() {
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/start" element={<StartPage />} />
-        <Route path="/start-workshop" element={<StartWorkshopPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </div>
   );

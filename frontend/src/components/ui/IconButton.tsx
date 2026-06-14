@@ -4,11 +4,10 @@ import { K } from "../../lib/karma";
 
 interface IconButtonProps {
   name: IconName;
-  active?: boolean;
   onClick?: MouseEventHandler<HTMLButtonElement>;
 }
 
-export function IconButton({ name, active, onClick }: IconButtonProps) {
+export function IconButton({ name, onClick }: IconButtonProps) {
   return (
     <button
       className="kiconbtn"
@@ -17,8 +16,8 @@ export function IconButton({ name, active, onClick }: IconButtonProps) {
         width: 44,
         height: 44,
         borderRadius: 12,
-        border: `1.5px solid ${active ? K.orange : K.border}`,
-        background: active ? K.orangeBg : "#fff",
+        border: `1.5px solid ${K.border}`,
+        background: "#fff",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -26,7 +25,7 @@ export function IconButton({ name, active, onClick }: IconButtonProps) {
         flexShrink: 0,
       }}
     >
-      <Icon name={name} size={18} color={active ? K.orange : K.faint} />
+      <Icon name={name} size={18} color={K.faint} />
     </button>
   );
 }

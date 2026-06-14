@@ -111,29 +111,8 @@ function PreviewCard({ f }: { f: ProjectForm }) {
 export function StartPage() {
   const navigate = useNavigate();
   const [f, setF] = useState<ProjectForm>({ cat: "Garden", title: "", desc: "", when: "", place: "", cap: "8", karma: "25" });
-  const [submitting, setSubmitting] = useState(false);
   const set = (k: keyof ProjectForm) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setF({ ...f, [k]: e.target.value });
-
-  async function handlePost() {
-    if (!f.title || !f.when || !f.place) return;
-    setSubmitting(true);
-    await fetch("/api/projects", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        cat: f.cat,
-        title: f.title,
-        desc: f.desc || null,
-        when: f.when,
-        place: f.place,
-        cap: Number(f.cap),
-        karma: Number(f.karma),
-      }),
-    });
-    setSubmitting(false);
-    navigate("/");
-  }
 
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 36px 64px" }}>
@@ -176,11 +155,11 @@ export function StartPage() {
             </Field>
           </div>
           <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-            <Button variant="primary" size="lg" icon="check" onClick={handlePost} disabled={submitting}>
-              {submitting ? "Posting…" : "Post project"}
+            <Button variant="primary" size="lg" icon="check" onClick={() => navigate("/")}>
+              Post project
             </Button>
             <Button variant="ghost" size="lg" onClick={() => navigate("/")}>
-              Cancel
+              Save draft
             </Button>
           </div>
         </div>
