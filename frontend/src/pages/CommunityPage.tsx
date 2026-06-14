@@ -20,6 +20,9 @@ interface Workshop {
   taken: number;
   level: string;
   icon: IconName;
+  description: string;
+  bring: string[];
+  karma: number;
 }
 
 const WORKSHOPS: Workshop[] = [
@@ -35,6 +38,10 @@ const WORKSHOPS: Workshop[] = [
     taken: 5,
     level: "Beginner",
     icon: "spark",
+    description:
+      "Learn to maintain a sourdough starter, understand hydration ratios, and bake your first loaf. Rosa has been baking naturally-leavened bread for six years and will walk you through every step, including how to troubleshoot a sluggish starter.",
+    bring: ["An apron", "A clean jar for starter to take home"],
+    karma: 40,
   },
   {
     id: "workshop-2",
@@ -48,6 +55,10 @@ const WORKSHOPS: Workshop[] = [
     taken: 9,
     level: "All levels",
     icon: "wrench",
+    description:
+      "Bring your bike and leave with it running smoothly. Sam will cover brake adjustments, derailleur indexing, tire pressure, and chain lubrication. All tools provided — just bring the bike that needs love.",
+    bring: ["Your bike", "Any spare parts you've been meaning to swap"],
+    karma: 35,
   },
   {
     id: "workshop-3",
@@ -61,6 +72,10 @@ const WORKSHOPS: Workshop[] = [
     taken: 4,
     level: "Beginner",
     icon: "sprout",
+    description:
+      "No yard? No problem. Dana will show you how to grow vegetables, herbs, and flowers in pots, buckets, and window boxes. Topics include soil mixes, watering schedules, companion planting, and what actually thrives in small containers.",
+    bring: ["Gloves if you have them", "A container or two if you want to pot something on the spot"],
+    karma: 30,
   },
   {
     id: "workshop-4",
@@ -74,6 +89,10 @@ const WORKSHOPS: Workshop[] = [
     taken: 6,
     level: "Beginner",
     icon: "bulb",
+    description:
+      "A hands-on intro covering safe tool use, reading grain, making straight cuts, and basic joinery. You'll build a small shelf to take home. Safety gear is provided; no prior experience needed.",
+    bring: ["Closed-toe shoes (required)", "Something to carry your shelf home in"],
+    karma: 50,
   },
 ];
 
@@ -96,6 +115,7 @@ type ReservationState =
 export function CommunityPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("Upcoming");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   // optimistic seat counts: workshopId → taken count
   const [takenMap, setTakenMap] = useState<Record<string, number>>({});
   // per-workshop button state
@@ -214,6 +234,7 @@ export function CommunityPage() {
             const isReserved = rState === "reserved";
             const isWaitlisted = rState === "waitlisted";
             const isError = rState === "error";
+            const isExpanded = expandedId === w.id;
             return (
               <div
                 key={i}
@@ -222,132 +243,227 @@ export function CommunityPage() {
                   background: "#fff",
                   borderRadius: 22,
                   boxShadow: K.shadow,
-                  display: "grid",
-                  gridTemplateColumns: "92px 1fr auto",
-                  alignItems: "center",
-                  gap: 20,
-                  padding: 18,
-                }}>
+                  overflow: "hidden",
+                  cursor: "pointer",
+                  transition: "box-shadow 0.18s",
+                }}
+                onClick={() =>
+                  setExpandedId(isExpanded ? null : w.id)
+                }>
+                {/* main row */}
                 <div
                   style={{
-                    width: 92,
-                    height: 92,
-                    borderRadius: 18,
-                    background: `linear-gradient(135deg,${cat.g[0]},${cat.g[1]})`,
-                    display: "flex",
+                    display: "grid",
+                    gridTemplateColumns: "92px 1fr auto",
                     alignItems: "center",
-                    justifyContent: "center",
+                    gap: 20,
+                    padding: 18,
                   }}>
-                  <Icon name={w.icon} size={36} color="#fff" sw={1.4} />
-                </div>
-                <div>
                   <div
                     style={{
+                      width: 92,
+                      height: 92,
+                      borderRadius: 18,
+                      background: `linear-gradient(135deg,${cat.g[0]},${cat.g[1]})`,
                       display: "flex",
                       alignItems: "center",
-                      gap: 10,
-                      marginBottom: 4,
+                      justifyContent: "center",
+                      flexShrink: 0,
                     }}>
-                    <Eyebrow color={cat.fg}>{w.cat}</Eyebrow>
-                    <span
+                    <Icon name={w.icon} size={36} color="#fff" sw={1.4} />
+                  </div>
+                  <div>
+                    <div
                       style={{
-                        fontSize: 11.5,
-                        color: K.faint,
-                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        marginBottom: 4,
                       }}>
-                      · {w.level}
-                    </span>
+                      <Eyebrow color={cat.fg}>{w.cat}</Eyebrow>
+                      <span
+                        style={{
+                          fontSize: 11.5,
+                          color: K.faint,
+                          fontWeight: 600,
+                        }}>
+                        · {w.level}
+                      </span>
+                    </div>
+                    <h4
+                      style={{
+                        fontFamily: K.serif,
+                        fontSize: 22,
+                        fontWeight: 700,
+                        margin: "0 0 8px",
+                      }}>
+                      {w.skill}
+                    </h4>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 16,
+                        flexWrap: "wrap",
+                        color: K.muted,
+                        fontSize: 13,
+                      }}>
+                      <span
+                        style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <Avatar initials={w.host} size={22} />
+                        {w.hostName}
+                      </span>
+                      <span
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Icon name="cal" size={14} color={K.faint} />
+                        {w.when}
+                      </span>
+                      <span
+                        style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <Icon name="pin" size={14} color={K.faint} />
+                        {w.place}
+                      </span>
+                    </div>
                   </div>
-                  <h4
-                    style={{
-                      fontFamily: K.serif,
-                      fontSize: 22,
-                      fontWeight: 700,
-                      margin: "0 0 8px",
-                    }}>
-                    {w.skill}
-                  </h4>
                   <div
                     style={{
+                      textAlign: "right",
                       display: "flex",
-                      alignItems: "center",
-                      gap: 16,
-                      flexWrap: "wrap",
-                      color: K.muted,
-                      fontSize: 13,
+                      flexDirection: "column",
+                      alignItems: "flex-end",
+                      gap: 10,
                     }}>
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                      <Avatar initials={w.host} size={22} />
-                      {w.hostName}
-                    </span>
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Icon name="cal" size={14} color={K.faint} />
-                      {w.when}
-                    </span>
-                    <span
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Icon name="pin" size={14} color={K.faint} />
-                      {w.place}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    textAlign: "right",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-end",
-                    gap: 10,
-                  }}>
-                  <div
-                    style={{
-                      fontSize: 12.5,
-                      color: isReserved
-                        ? K.leaf
-                        : isWaitlisted
-                          ? K.gold
-                          : full
-                            ? K.terra
-                            : K.muted,
-                      fontWeight: 700,
-                    }}>
-                    {isReserved
-                      ? "You're in!"
-                      : isWaitlisted
-                        ? "On waitlist"
-                        : isError
-                          ? "Something went wrong"
-                          : full
-                            ? "Waitlist only"
-                            : `${w.seats - taken} seats left`}
-                  </div>
-                  <Button
-                    variant={
-                      isReserved
-                        ? "ghost"
-                        : isWaitlisted
-                          ? "ghost"
-                          : full
-                            ? "ghost"
-                            : "primary"
-                    }
-                    onClick={() => !isLoading && handleReserve(w)}
-                    style={{
-                      cursor: isLoading || isWaitlisted ? "not-allowed" : undefined,
-                      opacity: isLoading || isWaitlisted ? 0.55 : undefined,
-                    }}>
-                    {isLoading
-                      ? "..."
-                      : isReserved
-                        ? "Leave a seat"
+                    <div
+                      style={{
+                        fontSize: 12.5,
+                        color: isReserved
+                          ? K.leaf
+                          : isWaitlisted
+                            ? K.gold
+                            : full
+                              ? K.terra
+                              : K.muted,
+                        fontWeight: 700,
+                      }}>
+                      {isReserved
+                        ? "You're in!"
                         : isWaitlisted
                           ? "On waitlist"
-                          : full
-                            ? "Join waitlist"
-                            : "Reserve a seat"}
-                  </Button>
+                          : isError
+                            ? "Something went wrong"
+                            : full
+                              ? "Waitlist only"
+                              : `${w.seats - taken} seats left`}
+                    </div>
+                  </div>
+                </div>
+
+                {/* expandable preview panel */}
+                <div
+                  style={{
+                    maxHeight: isExpanded ? 500 : 0,
+                    overflow: "hidden",
+                    transition: "max-height 0.28s ease",
+                  }}>
+                  <div
+                    style={{
+                      borderTop: `1px solid ${K.border}`,
+                      background: `linear-gradient(180deg, ${cat.g[0]}18 0%, #fff 100%)`,
+                      padding: "20px 22px 22px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 16,
+                    }}
+                    onClick={(e) => e.stopPropagation()}>
+                    {/* description */}
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 13.5,
+                        color: K.text,
+                        lineHeight: 1.6,
+                      }}>
+                      {w.description}
+                    </p>
+
+                    {/* what to bring */}
+                    <div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          fontWeight: 700,
+                          color: K.faint,
+                          marginBottom: 8,
+                        }}>
+                        What to bring
+                      </div>
+                      <ul style={{ margin: 0, padding: "0 0 0 18px" }}>
+                        {w.bring.map((item) => (
+                          <li
+                            key={item}
+                            style={{
+                              fontSize: 13,
+                              color: K.muted,
+                              marginBottom: 4,
+                            }}>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* footer row: karma + reserve button */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginTop: 4,
+                      }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 13,
+                          color: K.gold,
+                          fontWeight: 700,
+                        }}>
+                        <Icon name="spark" size={15} color={K.gold} sw={2} />
+                        +{w.karma} karma for attending
+                      </div>
+                      <Button
+                        variant={
+                          isReserved
+                            ? "ghost"
+                            : isWaitlisted
+                              ? "ghost"
+                              : full
+                                ? "ghost"
+                                : "primary"
+                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          !isLoading && handleReserve(w);
+                        }}
+                        style={{
+                          cursor: isLoading || isWaitlisted ? "not-allowed" : undefined,
+                          opacity: isLoading || isWaitlisted ? 0.55 : undefined,
+                        }}>
+                        {isLoading
+                          ? "..."
+                          : isReserved
+                            ? "Leave a seat"
+                            : isWaitlisted
+                              ? "On waitlist"
+                              : full
+                                ? "Join waitlist"
+                                : "Reserve a seat"}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
