@@ -369,14 +369,15 @@ export default function KarmaProfile(): React.ReactElement {
   const [draft, setDraft] = useState<Profile | null>(null);
   const [newSkill, setNewSkill] = useState<string>("");
 
-  const initials =
-    profile.name
-      .split(" ")
-      .filter(Boolean)
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "?";
+  // const initials =
+  //   profile.name
+  //     .split(" ")
+  //     .filter(Boolean)
+  //     .map((w) => w[0])
+  //     .join("")
+  //     .slice(0, 2)
+  //     .toUpperCase() || "?";
+  
   const pct = Math.max(
     0,
     Math.min(100, ((karma - PREV_LEVEL) / (NEXT_LEVEL - PREV_LEVEL)) * 100),
