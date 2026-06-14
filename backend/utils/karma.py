@@ -1,3 +1,5 @@
+from enums import Category
+
 KARMA_LEVELS = [
     (1, "Neighbor",    0,    149),
     (2, "Helper",      150,  399),
@@ -7,12 +9,12 @@ KARMA_LEVELS = [
     (6, "Pillar",      3000, None),
 ]
 
-CAT_ICON: dict[str, str] = {
-    "Garden":      "sprout",
-    "Cleanup":     "trend",
-    "Repair":      "wrench",
-    "Skill-share": "bulb",
-    "Mutual aid":  "heart",
+CAT_ICON: dict[Category, str] = {
+    Category.GARDEN:     "sprout",
+    Category.CLEANUP:    "trend",
+    Category.REPAIR:     "wrench",
+    Category.SKILL_SHARE: "bulb",
+    Category.MUTUAL_AID: "heart",
 }
 
 
