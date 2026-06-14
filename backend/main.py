@@ -10,6 +10,7 @@ from config import settings
 from database import AsyncSessionLocal, Base, engine
 from routers import misc as misc_router
 from routers import projects as projects_router
+from routers import users as users_router
 from routers import workshops as workshops_router
 from seed import seed
 
@@ -35,6 +36,7 @@ app.add_middleware(
 
 app.include_router(projects_router.router)
 app.include_router(workshops_router.router)
+app.include_router(users_router.router)
 app.include_router(misc_router.router)
 
 STATIC_DIR = Path(__file__).parent / "static"
