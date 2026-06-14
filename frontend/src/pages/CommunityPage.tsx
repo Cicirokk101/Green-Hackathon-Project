@@ -145,7 +145,7 @@ export function CommunityPage() {
         action={
           <div
             className="kbtn"
-            onClick={() => navigate("/start")}
+            onClick={() => navigate("/host-workshop")}
             style={{
               position: "relative",
               background: "#fff",
@@ -423,7 +423,7 @@ export function CommunityPage() {
               Teaching a skill earns you the most karma on Karma — and three
               neighbors who owe you one.
             </p>
-            <Button variant="soft" onClick={() => navigate("/start")}>
+            <Button variant="soft" onClick={() => navigate("/host-workshop")}>
               Host a workshop
             </Button>
           </div>

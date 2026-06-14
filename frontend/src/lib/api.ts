@@ -48,6 +48,10 @@ export const getMyReservation = (workshopId: string) =>
     `/api/workshops/${workshopId}/reservations/me`
   );
 
+/** POST /api/workshops — create a new workshop (host flow) */
+export const createWorkshop = (body: CreateWorkshopDTO) =>
+  request<WorkshopDTO>("POST", "/api/workshops", body);
+
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
 export interface WorkshopDTO {
@@ -75,4 +79,14 @@ export interface WaitlistDTO {
   workshopId: string;
   userId: string;
   position: number;
+}
+
+export interface CreateWorkshopDTO {
+  skill: string;
+  category: string;
+  when: string;
+  place: string;
+  seats: number;
+  level: string;
+  description: string;
 }
