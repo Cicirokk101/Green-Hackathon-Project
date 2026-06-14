@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { CAT, K, type CategoryName } from "../../lib/karma";
 import { Icon, type IconName } from "../../lib/icons";
 import { Avatar } from "../ui/Avatar";
@@ -8,6 +9,7 @@ import { KarmaBadge } from "../ui/Badge";
 import { Progress } from "../ui/Progress";
 
 export interface Project {
+  id: number;
   cat: CategoryName;
   icon: IconName;
   place: string;
@@ -20,10 +22,35 @@ export interface Project {
   joined: number;
   cap: number;
   pct: number;
+  bookmarked: boolean;
 }
 
 export function ProjectCard({ p }: { p: Project }) {
   const cat = CAT[p.cat] || CAT.Garden;
+  const [joined, setJoined] = useState(p.joined);
+  const [pct, setPct] = useState(p.pct);
+  const [bookmarked, setBookmarked] = useState(p.bookmarked);
+  const [joining, setJoining] = useState(false);
+
+  async function handleJoin() {
+    setJoining(true);
+    const res = await fetch(`/api/projects/${p.id}/join`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setJoined(data.joined);
+      setPct(data.pct);
+    }
+    setJoining(false);
+  }
+
+  async function handleBookmark() {
+    const res = await fetch(`/api/projects/${p.id}/bookmark`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setBookmarked(data.bookmarked);
+    }
+  }
+
   return (
     <div className="kcard" style={{ background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: K.shadow }}>
       <div style={{ height: 158, background: `linear-gradient(135deg, ${cat.g[0]}, ${cat.g[1]})`, position: "relative" }}>
@@ -58,16 +85,16 @@ export function ProjectCard({ p }: { p: Project }) {
           </span>
         </div>
         <div style={{ marginBottom: 14 }}>
-          <Progress pct={p.pct} />
+          <Progress pct={pct} />
           <div style={{ fontSize: 12, color: K.muted, marginTop: 6 }}>
-            {p.joined} of {p.cap} neighbors joined
+            {joined} of {p.cap} neighbors joined
           </div>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <Button variant="primary" full>
-            Join
+          <Button variant="primary" full disabled={joining} onClick={handleJoin}>
+            {joining ? "Joining…" : "Join"}
           </Button>
-          <IconButton name="bookmark" />
+          <IconButton name="bookmark" onClick={handleBookmark} active={bookmarked} />
         </div>
       </div>
     </div>

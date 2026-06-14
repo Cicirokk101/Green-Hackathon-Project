@@ -11,11 +11,12 @@ interface ButtonProps {
   icon?: IconName;
   size?: Size;
   full?: boolean;
+  disabled?: boolean;
   onClick?: MouseEventHandler<HTMLButtonElement>;
   style?: CSSProperties;
 }
 
-export function Button({ children, variant = "primary", icon, size = "md", full, onClick, style }: ButtonProps) {
+export function Button({ children, variant = "primary", icon, size = "md", full, disabled, onClick, style }: ButtonProps) {
   const pad = size === "lg" ? "13px 26px" : size === "sm" ? "8px 16px" : "11px 22px";
   const fs = size === "lg" ? 15.5 : size === "sm" ? 13 : 14;
   const base: CSSProperties = {
@@ -29,7 +30,8 @@ export function Button({ children, variant = "primary", icon, size = "md", full,
     padding: pad,
     borderRadius: 12,
     border: "none",
-    cursor: "pointer",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.55 : 1,
     width: full ? "100%" : "auto",
     whiteSpace: "nowrap",
     ...style,
@@ -42,7 +44,7 @@ export function Button({ children, variant = "primary", icon, size = "md", full,
     green: { background: K.leaf, color: "#fff" },
   };
   return (
-    <button className={"kbtn kbtn-" + variant} onClick={onClick} style={{ ...base, ...variants[variant] }}>
+    <button className={"kbtn kbtn-" + variant} onClick={onClick} disabled={disabled} style={{ ...base, ...variants[variant] }}>
       {icon && <Icon name={icon} size={fs + 2} sw={2.2} />}
       {children}
     </button>

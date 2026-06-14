@@ -1,22 +1,15 @@
+import { useEffect, useState } from "react";
 import { Eyebrow } from "../components/ui/Eyebrow";
 import { Icon, type IconName } from "../lib/icons";
 import { K } from "../lib/karma";
 
 interface ResourceLink {
+  id: number;
   t: string;
   d: string;
   src: string;
   icon: IconName;
 }
-
-const LINKS: ResourceLink[] = [
-  { t: "Neighborhood event toolkit", d: "A step-by-step PDF for planning your first block event.", src: "Strong Towns", icon: "flag" },
-  { t: "How to start a tool library", d: "Local Tools’ guide to sharing equipment with neighbors.", src: "localtools.org", icon: "wrench" },
-  { t: "Community garden starter", d: "Find a plot, organize volunteers, and split the harvest.", src: "American Community Garden Assn.", icon: "sprout" },
-  { t: "Mutual aid 101", d: "What it is, and how to set up a network on your street.", src: "Mutual Aid Hub", icon: "heart" },
-  { t: "Run a repair café", d: "The official playbook for hosting fix-it events.", src: "Repair Café Intl.", icon: "bolt" },
-  { t: "Talking to new neighbors", d: "Low-pressure scripts for breaking the ice.", src: "Karma guide", icon: "chat" },
-];
 
 const BELIEFS = [
   { h: "Help is local", b: "The best help is already on your street. Karma only shows you what’s within a short walk." },
@@ -46,6 +39,16 @@ function LinkRow({ l }: { l: ResourceLink }) {
 }
 
 export function ResourcesPage() {
+  const [links, setLinks] = useState<ResourceLink[]>([]);
+
+  useEffect(() => {
+    fetch("/api/resources")
+      .then((r) => r.json())
+      .then((data) =>
+        setLinks(data.map((r: any) => ({ id: r.id, t: r.title, d: r.description, src: r.source, icon: r.icon })))
+      );
+  }, []);
+
   return (
     <div style={{ padding: "0 0 60px" }}>
       {/* manifesto hero */}
@@ -90,8 +93,8 @@ export function ResourcesPage() {
         <h2 style={{ fontFamily: K.serif, fontSize: 34, fontWeight: 700, margin: "10px 0 6px" }}>Helpful links &amp; toolkits</h2>
         <p style={{ fontSize: 16, color: K.muted, margin: "0 0 28px", maxWidth: 620 }}>Hand-picked guides from organizations who’ve been doing this work for years.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
-          {LINKS.map((l, i) => (
-            <LinkRow key={i} l={l} />
+          {links.map((l) => (
+            <LinkRow key={l.id} l={l} />
           ))}
         </div>
       </div>

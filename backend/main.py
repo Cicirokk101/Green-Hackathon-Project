@@ -6,6 +6,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from config import settings
+from database import AsyncSessionLocal, Base, engine
+from routers import misc as misc_router
+from routers import projects as projects_router
+from routers import workshops as workshops_router
+from seed import seed
 
 app = FastAPI(title=settings.app_name, debug=settings.debug)
 
@@ -17,7 +22,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(projects_router.router)
+app.include_router(workshops_router.router)
+app.include_router(misc_router.router)
+
 STATIC_DIR = Path(__file__).parent / "static"
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    async with AsyncSessionLocal() as db:
+        await seed(db)
 
 
 @app.get("/api/health")

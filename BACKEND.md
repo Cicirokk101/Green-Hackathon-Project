@@ -1,5 +1,27 @@
 # Backend Plan
 
+## Implementation Status
+
+| Area | Status |
+|---|---|
+| DB models (`models.py`) | ✅ Done |
+| Karma helpers (`utils/karma.py`) | ✅ Done |
+| Pydantic schemas (`schemas/projects.py`, `schemas/workshops.py`) | ✅ Done |
+| Seed data (`seed.py`) | ✅ Done |
+| Config & DB engine (`config.py`, `database.py`) | ✅ Done |
+| `GET/POST /api/projects`, join, bookmark | ✅ Done — stubbed auth (`STUB_USER_ID = 1`) |
+| `GET/POST /api/workshops`, join | ✅ Done — stubbed auth (`STUB_USER_ID = 1`) |
+| `GET /api/skills/requested` | ✅ Done (`routers/misc.py`) |
+| `GET /api/resources` | ✅ Done (`routers/misc.py`) |
+| `GET /api/health` | ✅ Done (inline in `main.py`) |
+| Test suite (projects, workshops, health) | ✅ Done — in-memory SQLite, async httpx |
+| Auth endpoints (signup / login / me / onboarding) | ⬜ Not started |
+| Profile endpoints | ⬜ Not started |
+| Real JWT auth (replace `STUB_USER_ID`) | ⬜ Not started |
+| Frontend: AuthContext, LoginPage, OnboardingModal | ⬜ Not started |
+
+---
+
 ## Overview
 
 Full-stack plan derived from the static frontend, extended with auth and onboarding.
@@ -30,7 +52,7 @@ Returning user:
 
 ## Endpoints
 
-### Auth
+### Auth ⬜ Not implemented
 
 #### `POST /api/auth/signup`
 Create a new account.
@@ -107,7 +129,7 @@ Called once after signup to save the user's interests and skills. Sets `onboardi
 
 ---
 
-### Projects
+### Projects ✅ Implemented (`backend/routers/projects.py`)
 
 #### `GET /api/projects`
 List projects. Optional category filter. Results are personalized — user's interests are used to sort/highlight if no filter set.
@@ -184,7 +206,7 @@ Toggle bookmark. Call again to unbookmark.
 
 ---
 
-### Workshops
+### Workshops ✅ Implemented (`backend/routers/workshops.py`)
 
 #### `GET /api/workshops`
 **Query params**
@@ -246,7 +268,7 @@ Reserve seat or join waitlist if full.
 
 ---
 
-### Profile
+### Profile ⬜ Not implemented
 
 #### `GET /api/profile`
 Full profile for the current user. Used by the Profile page.
@@ -291,7 +313,7 @@ Remove a skill.
 
 ---
 
-### Community Sidebar
+### Community Sidebar ✅ Implemented (`backend/routers/misc.py`)
 
 #### `GET /api/skills/requested`
 Most-requested skills. Seeded, read-only for now.
@@ -308,7 +330,7 @@ Most-requested skills. Seeded, read-only for now.
 
 ---
 
-### Resources
+### Resources ✅ Implemented (`backend/routers/misc.py`)
 
 #### `GET /api/resources`
 Curated links. Seed data, no writes.
@@ -328,7 +350,7 @@ Curated links. Seed data, no writes.
 
 ---
 
-## Onboarding Modal (Frontend)
+## Onboarding Modal (Frontend) ⬜ Not implemented
 
 Multi-step modal shown immediately after signup, before the user sees the app.
 Blocks the UI until completed (no skip).
@@ -514,27 +536,34 @@ New users start at 0 / Level 1 "Neighbor".
 
 ```
 backend/
-  main.py              existing — add routers + startup + seed
-  config.py            existing — add JWT_SECRET setting
-  database.py          existing
-  models.py            NEW — all SQLAlchemy models
-  schemas.py           NEW — all Pydantic request/response models
-  auth.py              NEW — JWT encode/decode, password hash, get_current_user dependency
-  seed.py              NEW — demo user + seed data (only runs if tables empty)
+  main.py              ✅ routers registered + startup + seed + health + SPA fallback
+  config.py            ✅ Pydantic-settings (DB URL, CORS, debug)
+  database.py          ✅ async engine + get_db dependency
+  models.py            ✅ all SQLAlchemy models
+  seed.py              ✅ demo user + seed data (only runs if tables empty)
+  utils/
+    karma.py           ✅ KARMA_LEVELS, CAT_ICON, get_level_info()
+  schemas/
+    projects.py        ✅ ProjectCreate, ProjectOut, ProjectListOut, JoinProjectResponse, BookmarkResponse
+    workshops.py       ✅ WorkshopCreate, WorkshopOut, JoinWorkshopResponse
   routers/
-    __init__.py
-    auth.py            NEW — signup, login, me, onboarding
-    projects.py        NEW — 4 project endpoints
-    workshops.py       NEW — 3 workshop endpoints
-    profile.py         NEW — 3 profile endpoints
-    resources.py       NEW — GET /api/resources
-    community.py       NEW — GET /api/skills/requested
+    __init__.py        ✅
+    projects.py        ✅ GET/POST /api/projects, join, bookmark
+    workshops.py       ✅ GET/POST /api/workshops, join
+    misc.py            ✅ GET /api/skills/requested + GET /api/resources
+    auth.py            ⬜ signup, login, me, onboarding — NOT YET
+    profile.py         ⬜ profile endpoints — NOT YET
+  tests/
+    conftest.py        ✅ in-memory SQLite client + stub user fixture
+    test_health.py     ✅
+    test_projects.py   ✅ 23 tests, all 4 endpoints
+    test_workshops.py  ✅ 18+ tests, all 3 endpoints
 
 frontend/src/
   context/
-    AuthContext.tsx    NEW — token storage, current user, login/logout helpers
+    AuthContext.tsx    ⬜ NOT YET
   pages/
-    LoginPage.tsx      NEW — login + signup tabs
+    LoginPage.tsx      ⬜ NOT YET
   components/
-    OnboardingModal.tsx  NEW — 4-step modal shown after signup
+    OnboardingModal.tsx  ⬜ NOT YET
 ```

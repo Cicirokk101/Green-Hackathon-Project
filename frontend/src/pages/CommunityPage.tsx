@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar } from "../components/ui/Avatar";
 import { Button } from "../components/ui/Button";
@@ -8,32 +8,63 @@ import { Icon, type IconName } from "../lib/icons";
 import { CAT, K, type CategoryName } from "../lib/karma";
 
 interface Workshop {
+  id: number;
   skill: string;
   cat: CategoryName;
   host: string;
-  hostName: string;
+  host_name: string;
   when: string;
   place: string;
   seats: number;
   taken: number;
+  seats_left: number;
   level: string;
   icon: IconName;
+  full: boolean;
+  attending: boolean;
 }
 
-const WORKSHOPS: Workshop[] = [
-  { skill: "Sourdough basics", cat: "Skill-share", host: "RW", hostName: "Rosa W.", when: "Thu · Jun 19 · 6pm", place: "Maple Kitchen Co-op", seats: 8, taken: 5, level: "Beginner", icon: "spark" },
-  { skill: "Bike tune-up clinic", cat: "Repair", host: "SM", hostName: "Sam M.", when: "Sat · Jun 21 · 10am", place: "Tool Library", seats: 12, taken: 9, level: "All levels", icon: "wrench" },
-  { skill: "Container gardening", cat: "Garden", host: "DA", hostName: "Dana A.", when: "Sun · Jun 22 · 11am", place: "Elm St. lot", seats: 10, taken: 4, level: "Beginner", icon: "sprout" },
-  { skill: "Intro to woodworking", cat: "Skill-share", host: "JK", hostName: "Jordan K.", when: "Wed · Jun 25 · 7pm", place: "Community Workshop", seats: 6, taken: 6, level: "Beginner", icon: "bulb" },
-];
+interface SkillRequest {
+  skill: string;
+  count: number;
+}
 
 const TABS = ["Upcoming", "Hosting", "Attending", "Past"];
-const REQUESTED_SKILLS = ["Furniture repair", "Canning & preserving", "Basic electrical", "Resume help"];
-const REQUEST_COUNTS = [14, 11, 9, 7];
 
 export function CommunityPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("Upcoming");
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
+  const [skillRequests, setSkillRequests] = useState<SkillRequest[]>([]);
+  const [joining, setJoining] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/workshops?tab=${tab.toLowerCase()}`)
+      .then((r) => r.json())
+      .then(setWorkshops);
+  }, [tab]);
+
+  useEffect(() => {
+    fetch("/api/skills/requested")
+      .then((r) => r.json())
+      .then(setSkillRequests);
+  }, []);
+
+  async function handleJoin(w: Workshop) {
+    setJoining(w.id);
+    const res = await fetch(`/api/workshops/${w.id}/join`, { method: "POST" });
+    if (res.ok) {
+      const data = await res.json();
+      setWorkshops((prev) =>
+        prev.map((x) =>
+          x.id === w.id
+            ? { ...x, seats_left: data.seats_left, full: data.seats_left === 0, attending: !data.on_waitlist }
+            : x
+        )
+      );
+    }
+    setJoining(null);
+  }
 
   return (
     <div>
@@ -44,7 +75,7 @@ export function CommunityPage() {
         action={
           <div
             className="kbtn"
-            onClick={() => navigate("/start")}
+            onClick={() => navigate("/start-workshop")}
             style={{
               position: "relative",
               background: "#fff",
@@ -89,12 +120,14 @@ export function CommunityPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 28, padding: "24px 36px 44px", alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {WORKSHOPS.map((w, i) => {
+          {workshops.length === 0 && (
+            <div style={{ color: K.muted, padding: 40 }}>No workshops in this tab yet.</div>
+          )}
+          {workshops.map((w) => {
             const cat = CAT[w.cat];
-            const full = w.taken >= w.seats;
             return (
               <div
-                key={i}
+                key={w.id}
                 className="kcard"
                 style={{ background: "#fff", borderRadius: 22, boxShadow: K.shadow, display: "grid", gridTemplateColumns: "92px 1fr auto", alignItems: "center", gap: 20, padding: 18 }}
               >
@@ -110,7 +143,7 @@ export function CommunityPage() {
                   <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", color: K.muted, fontSize: 13 }}>
                     <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
                       <Avatar initials={w.host} size={22} />
-                      {w.hostName}
+                      {w.host_name}
                     </span>
                     <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Icon name="cal" size={14} color={K.faint} />
@@ -123,10 +156,16 @@ export function CommunityPage() {
                   </div>
                 </div>
                 <div style={{ textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-                  <div style={{ fontSize: 12.5, color: full ? K.terra : K.muted, fontWeight: 700 }}>
-                    {full ? "Waitlist only" : `${w.seats - w.taken} seats left`}
+                  <div style={{ fontSize: 12.5, color: w.full ? K.terra : K.muted, fontWeight: 700 }}>
+                    {w.attending ? "Attending" : w.full ? "Waitlist only" : `${w.seats_left} seats left`}
                   </div>
-                  <Button variant={full ? "ghost" : "primary"}>{full ? "Join waitlist" : "Reserve a seat"}</Button>
+                  <Button
+                    variant={w.attending ? "ghost" : w.full ? "ghost" : "primary"}
+                    disabled={w.attending || joining === w.id}
+                    onClick={() => handleJoin(w)}
+                  >
+                    {w.attending ? "Reserved" : joining === w.id ? "…" : w.full ? "Join waitlist" : "Reserve a seat"}
+                  </Button>
                 </div>
               </div>
             );
@@ -141,7 +180,7 @@ export function CommunityPage() {
             <p style={{ fontSize: 13.5, opacity: 0.92, margin: "0 0 16px", lineHeight: 1.5 }}>
               Teaching a skill earns you the most karma on Karma — and three neighbors who owe you one.
             </p>
-            <Button variant="soft" onClick={() => navigate("/start")}>
+            <Button variant="soft" onClick={() => navigate("/start-workshop")}>
               Host a workshop
             </Button>
           </div>
@@ -149,10 +188,10 @@ export function CommunityPage() {
             <div style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: K.faint, fontWeight: 700, marginBottom: 14 }}>
               Most-requested skills
             </div>
-            {REQUESTED_SKILLS.map((s, i) => (
-              <div key={s} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderTop: i ? `1px solid ${K.border}` : "none" }}>
-                <span style={{ fontSize: 13.5, color: K.text, fontWeight: 600 }}>{s}</span>
-                <span style={{ fontSize: 12, color: K.faint }}>{REQUEST_COUNTS[i]} want this</span>
+            {skillRequests.map((s, i) => (
+              <div key={s.skill} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderTop: i ? `1px solid ${K.border}` : "none" }}>
+                <span style={{ fontSize: 13.5, color: K.text, fontWeight: 600 }}>{s.skill}</span>
+                <span style={{ fontSize: 12, color: K.faint }}>{s.count} want this</span>
               </div>
             ))}
           </div>
