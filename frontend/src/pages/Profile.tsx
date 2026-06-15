@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getMe, updateSkills } from "../lib/api";
+import { getMe, getSkillRequests, updateSkills } from "../lib/api";
 
 type CSS = React.CSSProperties;
 
@@ -378,6 +378,16 @@ export default function KarmaProfile(): React.ReactElement {
   const [editing, setEditing] = useState<boolean>(false);
   const [draft, setDraft] = useState<Profile | null>(null);
   const [newSkill, setNewSkill] = useState<string>("");
+  const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
+  const [hoveredSkill, setHoveredSkill] = useState<string | null>(null);
+
+  const removeProfileSkill = (skill: string): void => {
+    setProfile((p) => {
+      const next = p.skills.filter((s) => s !== skill);
+      updateSkills(next).catch(() => {});
+      return { ...p, skills: next };
+    });
+  };
 
   // const initials =
   //   profile.name
@@ -398,6 +408,9 @@ export default function KarmaProfile(): React.ReactElement {
     setDraft({ ...profile, skills: [...profile.skills] });
     setNewSkill("");
     setEditing(true);
+    getSkillRequests()
+      .then((rows) => setSkillSuggestions(rows.map((r) => r.skill)))
+      .catch(() => {});
   };
   const closeEdit = (): void => {
     setEditing(false);
@@ -415,11 +428,15 @@ export default function KarmaProfile(): React.ReactElement {
     updateSkills(draft.skills).catch(() => {});
     closeEdit();
   };
-  const addSkill = (): void => {
-    const v = newSkill.trim();
+  const addSkill = (skill?: string): void => {
+    const v = (skill ?? newSkill).trim();
     if (!v) return;
-    setDraft((d) => (d ? { ...d, skills: [...d.skills, v] } : d));
-    setNewSkill("");
+    setDraft((d) => {
+      if (!d) return d;
+      if (d.skills.some((s) => s.toLowerCase() === v.toLowerCase())) return d;
+      return { ...d, skills: [...d.skills, v] };
+    });
+    if (!skill) setNewSkill("");
   };
   const removeSkill = (i: number): void =>
     setDraft((d) =>
@@ -588,7 +605,12 @@ export default function KarmaProfile(): React.ReactElement {
                 {profile.skills.map((skill) => (
                   <span
                     key={skill}
+                    onMouseEnter={() => setHoveredSkill(skill)}
+                    onMouseLeave={() => setHoveredSkill((h) => (h === skill ? null : h))}
                     style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
                       fontSize: 12.5,
                       padding: "6px 13px",
                       borderRadius: 999,
@@ -598,6 +620,29 @@ export default function KarmaProfile(): React.ReactElement {
                       fontWeight: 600,
                     }}>
                     {skill}
+                    {hoveredSkill === skill && (
+                      <button
+                        onClick={() => removeProfileSkill(skill)}
+                        title="Remove skill"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 16,
+                          height: 16,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "#EFE6D5",
+                          color: "#8A7C6B",
+                          fontSize: 11,
+                          lineHeight: 1,
+                          cursor: "pointer",
+                          padding: 0,
+                          fontFamily: "inherit",
+                        }}>
+                        ×
+                      </button>
+                    )}
                   </span>
                 ))}
               </div>
@@ -1655,6 +1700,51 @@ export default function KarmaProfile(): React.ReactElement {
                   ))
                 )}
               </div>
+              {(() => {
+                const suggestions = skillSuggestions.filter(
+                  (s) => !draft.skills.some((ds) => ds.toLowerCase() === s.toLowerCase()),
+                );
+                if (suggestions.length === 0) return null;
+                return (
+                  <div style={{ marginBottom: 12 }}>
+                    <div
+                      style={{
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "#A8997F",
+                        marginBottom: 8,
+                      }}>
+                      Neighbors are asking for
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {suggestions.map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => addSkill(s)}
+                          title="Add to your skills"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 12.5,
+                            padding: "6px 13px",
+                            borderRadius: 999,
+                            background: "#FFF1DF",
+                            border: "1px dashed #F0C79B",
+                            color: "#C75A12",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}>
+                          + {s}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               <div style={{ display: "flex", gap: 8 }}>
                 <input
                   value={newSkill}
@@ -1669,7 +1759,7 @@ export default function KarmaProfile(): React.ReactElement {
                   style={{ ...textInput, flex: 1, fontSize: 14 }}
                 />
                 <button
-                  onClick={addSkill}
+                  onClick={() => addSkill()}
                   style={{
                     background: "#fff",
                     border: "1px solid #2F6B45",

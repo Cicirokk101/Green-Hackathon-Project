@@ -7,8 +7,8 @@ import { ProjectCard, type Project } from "../components/cards/ProjectCard";
 import { SkillsCard } from "../components/cards/SkillsCard";
 import { Hero } from "../components/layout/Hero";
 import { Icon } from "../lib/icons";
-import { K, type CategoryName } from "../lib/karma";
-import { bookmarkProject, deleteProject, getProjects, joinProject, leaveProject, type ProjectDTO } from "../lib/api";
+import { categoryMatchesSkills, K, type CategoryName } from "../lib/karma";
+import { bookmarkProject, deleteProject, getMe, getProjects, joinProject, leaveProject, type ProjectDTO } from "../lib/api";
 
 const CATEGORY_BY_FILTER: Partial<Record<FilterName, CategoryName>> = {
   Gardens: "Garden",
@@ -59,16 +59,25 @@ export function ProjectsPage() {
   const [error, setError] = useState(false);
   const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
   const [joiningIds, setJoiningIds] = useState<Set<number>>(new Set());
+  const [mySkills, setMySkills] = useState<string[]>([]);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setMySkills(me.skills))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(false);
-    getProjects(CATEGORY_BY_FILTER[filter])
+    const cat = filter === "For me" ? undefined : CATEGORY_BY_FILTER[filter];
+    getProjects(cat)
       .then((data) => {
         if (cancelled) return;
-        setProjects(data.items.map(toProject));
-        setJoinedIds(new Set(data.items.filter((d) => d.joined_by_me).map((d) => d.id)));
+        const items = filter === "For me" ? data.items.filter((d) => categoryMatchesSkills(d.cat, mySkills)) : data.items;
+        setProjects(items.map(toProject));
+        setJoinedIds(new Set(items.filter((d) => d.joined_by_me).map((d) => d.id)));
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -79,7 +88,7 @@ export function ProjectsPage() {
     return () => {
       cancelled = true;
     };
-  }, [filter]);
+  }, [filter, mySkills]);
 
   async function handleJoin(id: number) {
     if (joinedIds.has(id) || joiningIds.has(id)) return;
@@ -175,7 +184,15 @@ export function ProjectsPage() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22 }}>
           {loading && <div style={{ color: K.muted, padding: 40 }}>Loading projects…</div>}
           {!loading && error && <div style={{ color: K.terra, padding: 40 }}>Couldn't load projects. Try again later.</div>}
-          {!loading && !error && projects.length === 0 && <div style={{ color: K.muted, padding: 40 }}>No projects in this category yet.</div>}
+          {!loading && !error && projects.length === 0 && (
+            <div style={{ color: K.muted, padding: 40 }}>
+              {filter === "For me"
+                ? mySkills.length === 0
+                  ? "Add some skills to your profile to see projects picked for you."
+                  : "No projects matching your skills right now."
+                : "No projects in this category yet."}
+            </div>
+          )}
           {!loading &&
             !error &&
             projects.map((p) => (

@@ -1,6 +1,6 @@
 import { Chip } from "./ui/Chip";
 
-export const FILTERS = ["All", "Gardens", "Cleanups", "Repairs", "Skill-shares", "Mutual aid"] as const;
+export const FILTERS = ["All", "For me", "Gardens", "Cleanups", "Repairs", "Skill-shares", "Mutual aid"] as const;
 export type FilterName = (typeof FILTERS)[number];
 
 const FILTER_EMOJI: Partial<Record<FilterName, string>> = {
