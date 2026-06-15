@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth import hash_password
 from enums import Category, WorkshopLevel
 from models import (
     Project, ProjectMembership, Resource,
@@ -45,7 +46,8 @@ async def seed(db: AsyncSession) -> None:
 
     now = datetime.now(timezone.utc)
 
-    user = User(**DEMO_USER)
+    demo = {**DEMO_USER, "password_hash": hash_password(DEMO_USER["password_hash"])}
+    user = User(**demo)
     db.add(user)
     await db.flush()
 

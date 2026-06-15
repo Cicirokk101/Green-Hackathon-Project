@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { FilterRow, type FilterName } from "../components/FilterRow";
 import { KarmaCard } from "../components/cards/KarmaCard";
 import { MapCard } from "../components/cards/MapCard";
@@ -59,6 +60,7 @@ export function ProjectsPage() {
   const [error, setError] = useState(false);
   const [joinedIds, setJoinedIds] = useState<Set<number>>(new Set());
   const [joiningIds, setJoiningIds] = useState<Set<number>>(new Set());
+  const { user } = useAuth();
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +84,7 @@ export function ProjectsPage() {
   }, [filter]);
 
   async function handleJoin(id: number) {
+    if (!user) { navigate("/login"); return; }
     if (joinedIds.has(id) || joiningIds.has(id)) return;
     setJoiningIds((s) => new Set(s).add(id));
     try {
@@ -98,6 +101,7 @@ export function ProjectsPage() {
   }
 
   async function handleLeave(id: number) {
+    if (!user) { navigate("/login"); return; }
     if (joiningIds.has(id)) return;
     setJoiningIds((s) => new Set(s).add(id));
     try {
@@ -128,6 +132,7 @@ export function ProjectsPage() {
   }
 
   async function handleBookmark(id: number) {
+    if (!user) { navigate("/login"); return; }
     setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, bookmarked: !p.bookmarked } : p)));
     try {
       await bookmarkProject(id);

@@ -1,9 +1,16 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import { Icon } from "../../lib/icons";
 import { K } from "../../lib/karma";
 import { Avatar } from "../ui/Avatar";
 
-const NAV = [
+const NAV_PUBLIC = [
+  { label: "Projects", to: "/" },
+  { label: "Community", to: "/community" },
+  { label: "Resources", to: "/resources" },
+];
+
+const NAV_AUTHED = [
   { label: "Projects", to: "/" },
   { label: "Community", to: "/community" },
   { label: "Resources", to: "/resources" },
@@ -13,6 +20,8 @@ const NAV = [
 export function TopNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const nav = user ? NAV_AUTHED : NAV_PUBLIC;
 
   return (
     <div
@@ -47,7 +56,7 @@ export function TopNav() {
           <span style={{ fontFamily: K.serif, fontSize: 22, fontWeight: 700, color: K.ink }}>Karma</span>
         </Link>
         <div style={{ display: "flex", gap: 6, fontSize: 14, fontWeight: 600 }}>
-          {NAV.map((n) => {
+          {nav.map((n) => {
             const active = location.pathname === n.to;
             return (
               <Link
@@ -67,46 +76,85 @@ export function TopNav() {
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 7, background: K.orangeBg, borderRadius: 999, padding: "8px 15px" }}>
-          <span
-            style={{
-              width: 18,
-              height: 18,
-              borderRadius: "50%",
-              background: K.gold,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon name="clock" size={11} color="#fff" sw={2} />
-          </span>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: K.orangeDeep }}>1,240</span>
-        </div>
-        <button
-          className="kbtn"
-          onClick={() => navigate("/start")}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            background: K.ink,
-            color: "#fff",
-            border: "none",
-            borderRadius: 999,
-            padding: "9px 17px",
-            fontFamily: K.sans,
-            fontSize: 13.5,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          <Icon name="plus" size={15} sw={2.4} />
-          Start a project
-        </button>
-        <Link to="/profile">
-          <Avatar initials="MR" size={36} color={`linear-gradient(135deg,${K.orange},${K.terra})`} />
-        </Link>
+        {user ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, background: K.orangeBg, borderRadius: 999, padding: "8px 15px" }}>
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: "50%",
+                  background: K.gold,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="clock" size={11} color="#fff" sw={2} />
+              </span>
+              <span style={{ fontSize: 13.5, fontWeight: 700, color: K.orangeDeep }}>
+                {user.karma_points.toLocaleString()}
+              </span>
+            </div>
+            <button
+              className="kbtn"
+              onClick={() => navigate("/start")}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                background: K.ink,
+                color: "#fff",
+                border: "none",
+                borderRadius: 999,
+                padding: "9px 17px",
+                fontFamily: K.sans,
+                fontSize: 13.5,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              <Icon name="plus" size={15} sw={2.4} />
+              Start a project
+            </button>
+            <Link to="/profile">
+              <Avatar
+                initials={user.initials}
+                size={36}
+                color={`linear-gradient(135deg,${K.orange},${K.terra})`}
+              />
+            </Link>
+          </>
+        ) : (
+          <>
+            <Link
+              to="/login"
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: K.muted,
+                textDecoration: "none",
+                padding: "9px 16px",
+              }}
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/register"
+              style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#fff",
+                textDecoration: "none",
+                background: K.orange,
+                borderRadius: 999,
+                padding: "9px 18px",
+              }}
+            >
+              Join
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

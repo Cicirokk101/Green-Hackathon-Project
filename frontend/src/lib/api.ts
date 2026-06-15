@@ -1,7 +1,8 @@
 import type { IconName } from "./icons";
 import type { CategoryName } from "./karma";
+import { getToken } from "./auth";
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 function delay(ms = 400) {
   return new Promise((r) => setTimeout(r, ms));
@@ -13,9 +14,13 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`${method} ${path} → ${res.status}`);
@@ -28,6 +33,17 @@ async function mockRequest<T>(): Promise<T> {
   await delay();
   return {} as T;
 }
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export const authRegister = (body: { name: string; email: string; password: string }): Promise<TokenOut> =>
+  request<TokenOut>("POST", "/api/auth/register", body);
+
+export const authLogin = (body: { email: string; password: string }): Promise<TokenOut> =>
+  request<TokenOut>("POST", "/api/auth/login", body);
+
+export const authMe = (): Promise<UserDTO> =>
+  request<UserDTO>("GET", "/api/auth/me");
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
@@ -176,4 +192,9 @@ export interface UserDTO {
   skills: string[];
   interests: string[];
   level: number;
+}
+
+export interface TokenOut {
+  token: string;
+  user: UserDTO;
 }

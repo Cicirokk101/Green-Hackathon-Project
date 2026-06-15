@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 
 from config import settings
 from database import AsyncSessionLocal, Base, engine
+from routers import auth as auth_router
 from routers import misc as misc_router
 from routers import projects as projects_router
 from routers import users as users_router
@@ -34,6 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router.router)
 app.include_router(projects_router.router)
 app.include_router(workshops_router.router)
 app.include_router(users_router.router)

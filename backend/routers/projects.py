@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, HTTPException, Response
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from auth import get_current_user, get_optional_user
 from database import get_db
 from enums import Category, ProjectStatus
-from models import Project, ProjectBookmark, ProjectMembership
+from models import Project, ProjectBookmark, ProjectMembership, User
 from schemas.projects import (
     BookmarkResponse, JoinProjectResponse,
     ProjectCreate, ProjectListOut, ProjectOut,
@@ -14,8 +15,6 @@ from schemas.projects import (
 from utils.karma import CAT_ICON
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
-
-STUB_USER_ID = 1
 
 
 def _build_project_out(project: Project, joined: int, bookmarked: bool, user_id: int) -> ProjectOut:
@@ -49,6 +48,7 @@ async def list_projects(
     joined_by: int | None = None,
     status: ProjectStatus | None = None,
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
 ) -> ProjectListOut:
     q = select(Project).options(selectinload(Project.host))
     if cat:
@@ -69,13 +69,15 @@ async def list_projects(
         joined = await db.scalar(
             select(func.count()).where(ProjectMembership.project_id == p.id)
         ) or 0
-        bookmarked = await db.scalar(
-            select(func.count()).where(
-                ProjectBookmark.project_id == p.id,
-                ProjectBookmark.user_id == STUB_USER_ID,
-            )
-        ) or 0
-        items.append(_build_project_out(p, joined, bool(bookmarked), STUB_USER_ID))
+        bookmarked = False
+        if user:
+            bookmarked = bool(await db.scalar(
+                select(func.count()).where(
+                    ProjectBookmark.project_id == p.id,
+                    ProjectBookmark.user_id == user.id,
+                )
+            ) or 0)
+        items.append(_build_project_out(p, joined, bookmarked, user.id if user else -1))
 
     return ProjectListOut(total=len(items), items=items)
 
@@ -84,6 +86,7 @@ async def list_projects(
 async def create_project(
     body: ProjectCreate,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> ProjectOut:
     project = Project(
         cat=body.cat,
@@ -94,7 +97,7 @@ async def create_project(
         karma=body.karma,
         cap=body.cap,
         status=body.status,
-        host_id=STUB_USER_ID,
+        host_id=user.id,
     )
     db.add(project)
     await db.commit()
@@ -102,13 +105,33 @@ async def create_project(
         select(Project).options(selectinload(Project.host)).where(Project.id == project.id)
     )
     project = result.scalar_one()
-    return _build_project_out(project, 0, False, STUB_USER_ID)
+    return _build_project_out(project, 0, False, user.id)
+
+
+@router.delete("/{project_id}", status_code=204)
+async def delete_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if project.host_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the host can delete this project")
+
+    await db.execute(delete(ProjectMembership).where(ProjectMembership.project_id == project_id))
+    await db.execute(delete(ProjectBookmark).where(ProjectBookmark.project_id == project_id))
+    await db.delete(project)
+    await db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/{project_id}/join", response_model=JoinProjectResponse)
 async def join_project(
     project_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> JoinProjectResponse:
     project = await db.get(Project, project_id)
     if not project:
@@ -117,7 +140,7 @@ async def join_project(
     cap = project.cap
 
     try:
-        db.add(ProjectMembership(project_id=project_id, user_id=STUB_USER_ID))
+        db.add(ProjectMembership(project_id=project_id, user_id=user.id))
         await db.commit()
     except IntegrityError:
         await db.rollback()
@@ -129,10 +152,36 @@ async def join_project(
     return JoinProjectResponse(success=True, joined=joined, pct=pct)
 
 
+@router.delete("/{project_id}/join", response_model=JoinProjectResponse)
+async def leave_project(
+    project_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> JoinProjectResponse:
+    project = await db.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await db.execute(
+        delete(ProjectMembership).where(
+            ProjectMembership.project_id == project_id,
+            ProjectMembership.user_id == user.id,
+        )
+    )
+    await db.commit()
+
+    joined = await db.scalar(
+        select(func.count()).where(ProjectMembership.project_id == project_id)
+    ) or 0
+    pct = int(joined / project.cap * 100) if project.cap else 0
+    return JoinProjectResponse(success=True, joined=joined, pct=pct)
+
+
 @router.post("/{project_id}/bookmark", response_model=BookmarkResponse)
 async def bookmark_project(
     project_id: int,
     db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> BookmarkResponse:
     if not await db.get(Project, project_id):
         raise HTTPException(status_code=404, detail="Project not found")
@@ -140,7 +189,7 @@ async def bookmark_project(
     existing = await db.scalar(
         select(ProjectBookmark).where(
             ProjectBookmark.project_id == project_id,
-            ProjectBookmark.user_id == STUB_USER_ID,
+            ProjectBookmark.user_id == user.id,
         )
     )
     if existing:
@@ -148,6 +197,6 @@ async def bookmark_project(
         await db.commit()
         return BookmarkResponse(bookmarked=False)
 
-    db.add(ProjectBookmark(project_id=project_id, user_id=STUB_USER_ID))
+    db.add(ProjectBookmark(project_id=project_id, user_id=user.id))
     await db.commit()
     return BookmarkResponse(bookmarked=True)

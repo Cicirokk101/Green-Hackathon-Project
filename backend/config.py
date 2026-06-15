@@ -21,6 +21,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
+    secret_key: str = "dev-secret-key-change-in-prod"
+
     # Add API keys here, e.g.:
     # openai_api_key: str = ""
 
