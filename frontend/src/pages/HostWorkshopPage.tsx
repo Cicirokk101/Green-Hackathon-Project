@@ -35,23 +35,40 @@ interface WorkshopForm {
 
 function Label({ children }: { children: ReactNode }) {
   return (
-    <div style={{ fontSize: 13, fontWeight: 700, color: K.text, marginBottom: 8 }}>
+    <div
+      style={{ fontSize: 13, fontWeight: 700, color: K.text, marginBottom: 8 }}>
       {children}
     </div>
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
   return (
     <div style={{ marginBottom: 22 }}>
       <Label>{label}</Label>
       {children}
-      {hint && <div style={{ fontSize: 12, color: K.faint, marginTop: 6 }}>{hint}</div>}
+      {hint && (
+        <div style={{ fontSize: 12, color: K.faint, marginTop: 6 }}>{hint}</div>
+      )}
     </div>
   );
 }
 
-function CatPicker({ value, onChange }: { value: CategoryName; onChange: (c: CategoryName) => void }) {
+function CatPicker({
+  value,
+  onChange,
+}: {
+  value: CategoryName;
+  onChange: (c: CategoryName) => void;
+}) {
   return (
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
       {CATS.map((c) => {
@@ -75,9 +92,13 @@ function CatPicker({ value, onChange }: { value: CategoryName; onChange: (c: Cat
               border: on ? `1.5px solid ${col.fg}` : `1.5px solid ${K.border}`,
               background: on ? col.fg + "16" : "#fff",
               color: on ? col.fg : K.muted,
-            }}
-          >
-            <Icon name={CAT_ICON[c]} size={16} color={on ? col.fg : K.faint} sw={1.8} />
+            }}>
+            <Icon
+              name={CAT_ICON[c]}
+              size={16}
+              color={on ? col.fg : K.faint}
+              sw={1.8}
+            />
             {c}
           </button>
         );
@@ -99,8 +120,7 @@ function PreviewCard({ f }: { f: WorkshopForm }) {
         alignItems: "center",
         gap: 20,
         padding: 18,
-      }}
-    >
+      }}>
       <div
         style={{
           width: 92,
@@ -111,12 +131,22 @@ function PreviewCard({ f }: { f: WorkshopForm }) {
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-        }}
-      >
-        <Icon name={CAT_ICON[f.cat] || "bulb"} size={36} color="#fff" sw={1.4} />
+        }}>
+        <Icon
+          name={CAT_ICON[f.cat] || "bulb"}
+          size={36}
+          color="#fff"
+          sw={1.4}
+        />
       </div>
       <div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 4,
+          }}>
           <CategoryTag label={f.cat} />
           {f.level && (
             <span style={{ fontSize: 11.5, color: K.faint, fontWeight: 600 }}>
@@ -131,8 +161,7 @@ function PreviewCard({ f }: { f: WorkshopForm }) {
             fontWeight: 700,
             margin: "0 0 8px",
             color: f.skill ? K.ink : K.faint,
-          }}
-        >
+          }}>
           {f.skill || "Your workshop title…"}
         </h4>
         <div
@@ -143,10 +172,13 @@ function PreviewCard({ f }: { f: WorkshopForm }) {
             flexWrap: "wrap",
             color: K.muted,
             fontSize: 13,
-          }}
-        >
+          }}>
           <span style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <Avatar initials="MR" size={22} color={`linear-gradient(135deg,${K.orange},${K.terra})`} />
+            <Avatar
+              initials="MR"
+              size={22}
+              color={`linear-gradient(135deg,${K.orange},${K.terra})`}
+            />
             You
           </span>
           {f.when && (
@@ -187,7 +219,11 @@ export function HostWorkshopPage() {
 
   const set =
     (k: keyof WorkshopForm) =>
-    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    (
+      e: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) =>
       setF({ ...f, [k]: e.target.value });
 
   async function handlePost() {
@@ -209,7 +245,8 @@ export function HostWorkshopPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 36px 64px" }}>
+    <div
+      style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 36px 64px" }}>
       <span
         onClick={() => navigate("/community")}
         className="klink"
@@ -222,26 +259,57 @@ export function HostWorkshopPage() {
           fontWeight: 600,
           cursor: "pointer",
           marginBottom: 18,
-        }}
-      >
-        <Icon name="chevron" size={15} color={K.muted} style={{ transform: "rotate(180deg)" }} />
+        }}>
+        <Icon
+          name="chevron"
+          size={15}
+          color={K.muted}
+          style={{ transform: "rotate(180deg)" }}
+        />
         Back to community
       </span>
 
-      <h1 style={{ fontFamily: K.serif, fontSize: 38, fontWeight: 700, margin: "0 0 6px" }}>
+      <h1
+        style={{
+          fontFamily: K.serif,
+          fontSize: 38,
+          fontWeight: 700,
+          margin: "0 0 6px",
+        }}>
         Host a workshop
       </h1>
-      <p style={{ fontSize: 16, color: K.muted, margin: "0 0 32px", maxWidth: 560 }}>
-        Share what you know. Workshops earn you the most karma and connect you with neighbors who care about the same things.
+      <p
+        style={{
+          fontSize: 16,
+          color: K.muted,
+          margin: "0 0 32px",
+          maxWidth: 560,
+        }}>
+        Share what you know. Workshops earn you the most karma and connect you
+        with neighbors who care about the same things.
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 40, alignItems: "start" }}>
-        <div style={{ background: "#fff", borderRadius: 22, padding: "30px 32px", boxShadow: K.shadow }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 320px",
+          gap: 40,
+          alignItems: "start",
+        }}>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 22,
+            padding: "30px 32px",
+            boxShadow: K.shadow,
+          }}>
           <Field label="What kind of workshop?">
             <CatPicker value={f.cat} onChange={(c) => setF({ ...f, cat: c })} />
           </Field>
 
-          <Field label="Workshop title" hint="Be specific — neighbors scan fast.">
+          <Field
+            label="Workshop title"
+            hint="Be specific — neighbors scan fast.">
             <TextInput
               value={f.skill}
               onChange={set("skill")}
@@ -257,7 +325,12 @@ export function HostWorkshopPage() {
             />
           </Field>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+            }}>
             <Field label="When">
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DateTimePicker
@@ -267,23 +340,39 @@ export function HostWorkshopPage() {
                     textField: {
                       size: "small",
                       fullWidth: true,
-                      placeholder: "Sat · Jun 21 · 10am",
                     },
                   }}
                 />
               </LocalizationProvider>
             </Field>
             <Field label="Where">
-              <TextInput value={f.place} onChange={set("place")} placeholder="Tool Library, Elm St. lot…" />
+              <TextInput
+                value={f.place}
+                onChange={set("place")}
+                placeholder="Tool Library, Elm St. lot…"
+              />
             </Field>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+            }}>
             <Field label="Seats available">
-              <Select value={f.seats} onChange={set("seats")} options={["4", "6", "8", "10", "12", "16", "20"]} />
+              <Select
+                value={f.seats}
+                onChange={set("seats")}
+                options={["4", "6", "8", "10", "12", "16", "20"]}
+              />
             </Field>
             <Field label="Skill level">
-              <Select value={f.level} onChange={set("level")} options={LEVELS} />
+              <Select
+                value={f.level}
+                onChange={set("level")}
+                options={LEVELS}
+              />
             </Field>
           </div>
 
@@ -293,11 +382,16 @@ export function HostWorkshopPage() {
               size="lg"
               icon="check"
               onClick={handlePost}
-              style={{ opacity: submitting ? 0.6 : 1, cursor: submitting ? "not-allowed" : undefined }}
-            >
+              style={{
+                opacity: submitting ? 0.6 : 1,
+                cursor: submitting ? "not-allowed" : undefined,
+              }}>
               {submitting ? "Posting…" : "Post workshop"}
             </Button>
-            <Button variant="ghost" size="lg" onClick={() => navigate("/community")}>
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={() => navigate("/community")}>
               Cancel
             </Button>
           </div>
@@ -312,8 +406,7 @@ export function HostWorkshopPage() {
               color: K.faint,
               fontWeight: 700,
               marginBottom: 12,
-            }}
-          >
+            }}>
             Live preview
           </div>
           <PreviewCard f={f} />
@@ -326,10 +419,15 @@ export function HostWorkshopPage() {
               padding: "14px 16px",
               background: K.leafBg,
               borderRadius: 14,
-            }}
-          >
+            }}>
             <Icon name="spark" size={18} color={K.leaf} sw={1.8} />
-            <span style={{ fontSize: 12.5, color: K.forest, fontWeight: 600, lineHeight: 1.4 }}>
+            <span
+              style={{
+                fontSize: 12.5,
+                color: K.forest,
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}>
               Teaching a skill earns the most karma on Karma.
             </span>
           </div>

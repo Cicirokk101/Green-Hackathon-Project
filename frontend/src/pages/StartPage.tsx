@@ -9,8 +9,15 @@ import { CategoryTag } from "../components/ui/Tag";
 import { Progress } from "../components/ui/Progress";
 import { Icon, type IconName } from "../lib/icons";
 import { CAT, K, type CategoryName } from "../lib/karma";
+import { createProject } from "../lib/api";
 
-const CATS: CategoryName[] = ["Garden", "Cleanup", "Repair", "Skill-share", "Mutual aid"];
+const CATS: CategoryName[] = [
+  "Garden",
+  "Cleanup",
+  "Repair",
+  "Skill-share",
+  "Mutual aid",
+];
 const CAT_ICON: Record<CategoryName, IconName> = {
   Garden: "sprout",
   Cleanup: "trend",
@@ -30,20 +37,41 @@ interface ProjectForm {
 }
 
 function Label({ children }: { children: ReactNode }) {
-  return <div style={{ fontSize: 13, fontWeight: 700, color: K.text, marginBottom: 8 }}>{children}</div>;
-}
-
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <div style={{ marginBottom: 22 }}>
-      <Label>{label}</Label>
+    <div
+      style={{ fontSize: 13, fontWeight: 700, color: K.text, marginBottom: 8 }}>
       {children}
-      {hint && <div style={{ fontSize: 12, color: K.faint, marginTop: 6 }}>{hint}</div>}
     </div>
   );
 }
 
-function CatPicker({ value, onChange }: { value: CategoryName; onChange: (c: CategoryName) => void }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <Label>{label}</Label>
+      {children}
+      {hint && (
+        <div style={{ fontSize: 12, color: K.faint, marginTop: 6 }}>{hint}</div>
+      )}
+    </div>
+  );
+}
+
+function CatPicker({
+  value,
+  onChange,
+}: {
+  value: CategoryName;
+  onChange: (c: CategoryName) => void;
+}) {
   return (
     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
       {CATS.map((c) => {
@@ -67,9 +95,13 @@ function CatPicker({ value, onChange }: { value: CategoryName; onChange: (c: Cat
               border: on ? `1.5px solid ${col.fg}` : `1.5px solid ${K.border}`,
               background: on ? col.fg + "16" : "#fff",
               color: on ? col.fg : K.muted,
-            }}
-          >
-            <Icon name={CAT_ICON[c]} size={16} color={on ? col.fg : K.faint} sw={1.8} />
+            }}>
+            <Icon
+              name={CAT_ICON[c]}
+              size={16}
+              color={on ? col.fg : K.faint}
+              sw={1.8}
+            />
             {c}
           </button>
         );
@@ -81,9 +113,31 @@ function CatPicker({ value, onChange }: { value: CategoryName; onChange: (c: Cat
 function PreviewCard({ f }: { f: ProjectForm }) {
   const cat = CAT[f.cat] || CAT.Garden;
   return (
-    <div style={{ background: "#fff", borderRadius: 22, overflow: "hidden", boxShadow: K.shadow }}>
-      <div style={{ height: 140, background: `linear-gradient(135deg, ${cat.g[0]}, ${cat.g[1]})`, position: "relative" }}>
-        <Icon name={CAT_ICON[f.cat] || "sprout"} size={46} color="#fff" sw={1.3} style={{ position: "absolute", inset: 0, margin: "auto", opacity: 0.4 }} />
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 22,
+        overflow: "hidden",
+        boxShadow: K.shadow,
+      }}>
+      <div
+        style={{
+          height: 140,
+          background: `linear-gradient(135deg, ${cat.g[0]}, ${cat.g[1]})`,
+          position: "relative",
+        }}>
+        <Icon
+          name={CAT_ICON[f.cat] || "sprout"}
+          size={46}
+          color="#fff"
+          sw={1.3}
+          style={{
+            position: "absolute",
+            inset: 0,
+            margin: "auto",
+            opacity: 0.4,
+          }}
+        />
         <span style={{ position: "absolute", left: 14, top: 14 }}>
           <CategoryTag label={f.cat} />
         </span>
@@ -94,15 +148,37 @@ function PreviewCard({ f }: { f: ProjectForm }) {
         )}
       </div>
       <div style={{ padding: "16px 18px 18px" }}>
-        <h4 style={{ fontFamily: K.serif, fontSize: 19, fontWeight: 700, margin: "0 0 10px", lineHeight: 1.2, color: f.title ? K.ink : K.faint }}>
+        <h4
+          style={{
+            fontFamily: K.serif,
+            fontSize: 19,
+            fontWeight: 700,
+            margin: "0 0 10px",
+            lineHeight: 1.2,
+            color: f.title ? K.ink : K.faint,
+          }}>
           {f.title || "Your project title…"}
         </h4>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Avatar initials="MR" size={24} color={`linear-gradient(135deg,${K.orange},${K.terra})`} />
-          <span style={{ fontSize: 12.5, color: K.muted }}>You · Maplewood {f.when ? "· " + f.when : ""}</span>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 12,
+          }}>
+          <Avatar
+            initials="MR"
+            size={24}
+            color={`linear-gradient(135deg,${K.orange},${K.terra})`}
+          />
+          <span style={{ fontSize: 12.5, color: K.muted }}>
+            You · Maplewood {f.when ? "· " + f.when : ""}
+          </span>
         </div>
         <Progress pct={0} />
-        <div style={{ fontSize: 12, color: K.faint, marginTop: 6 }}>0 of {f.cap || "—"} neighbors joined</div>
+        <div style={{ fontSize: 12, color: K.faint, marginTop: 6 }}>
+          0 of {f.cap || "—"} neighbors joined
+        </div>
       </div>
     </div>
   );
@@ -110,53 +186,178 @@ function PreviewCard({ f }: { f: ProjectForm }) {
 
 export function StartPage() {
   const navigate = useNavigate();
-  const [f, setF] = useState<ProjectForm>({ cat: "Garden", title: "", desc: "", when: "", place: "", cap: "8", karma: "25" });
-  const set = (k: keyof ProjectForm) => (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-    setF({ ...f, [k]: e.target.value });
+  const [f, setF] = useState<ProjectForm>({
+    cat: "Garden",
+    title: "",
+    desc: "",
+    when: "",
+    place: "",
+    cap: "8",
+    karma: "25",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const set =
+    (k: keyof ProjectForm) =>
+    (
+      e: ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) =>
+      setF({ ...f, [k]: e.target.value });
+
+  const handlePost = async () => {
+    if (!f.title.trim() || !f.place.trim() || !f.when.trim()) return;
+    setSubmitting(true);
+    try {
+      // Parse a loose "Sat · 9am" style string into an ISO datetime for the backend.
+      // Fall back to a datetime 7 days from now if we can't parse it.
+      const parsed = new Date(f.when);
+      const when = isNaN(parsed.getTime())
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : parsed.toISOString();
+      await createProject({
+        cat: f.cat,
+        title: f.title,
+        desc: f.desc || undefined,
+        when,
+        place: f.place,
+        cap: Number(f.cap),
+        karma: Number(f.karma),
+      });
+      navigate("/");
+    } catch (err) {
+      console.error("Failed to create project", err);
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 36px 64px" }}>
+    <div
+      style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 36px 64px" }}>
       <span
         onClick={() => navigate("/")}
         className="klink"
-        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, color: K.muted, fontWeight: 600, cursor: "pointer", marginBottom: 18 }}
-      >
-        <Icon name="chevron" size={15} color={K.muted} style={{ transform: "rotate(180deg)" }} />
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          fontSize: 13.5,
+          color: K.muted,
+          fontWeight: 600,
+          cursor: "pointer",
+          marginBottom: 18,
+        }}>
+        <Icon
+          name="chevron"
+          size={15}
+          color={K.muted}
+          style={{ transform: "rotate(180deg)" }}
+        />
         Back to projects
       </span>
-      <h1 style={{ fontFamily: K.serif, fontSize: 38, fontWeight: 700, margin: "0 0 6px" }}>Start a project</h1>
-      <p style={{ fontSize: 16, color: K.muted, margin: "0 0 32px", maxWidth: 560 }}>Rally a few neighbors around something small. It only takes a minute to post.</p>
+      <h1
+        style={{
+          fontFamily: K.serif,
+          fontSize: 38,
+          fontWeight: 700,
+          margin: "0 0 6px",
+        }}>
+        Start a project
+      </h1>
+      <p
+        style={{
+          fontSize: 16,
+          color: K.muted,
+          margin: "0 0 32px",
+          maxWidth: 560,
+        }}>
+        Rally a few neighbors around something small. It only takes a minute to
+        post.
+      </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 40, alignItems: "start" }}>
-        <div style={{ background: "#fff", borderRadius: 22, padding: "30px 32px", boxShadow: K.shadow }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 320px",
+          gap: 40,
+          alignItems: "start",
+        }}>
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 22,
+            padding: "30px 32px",
+            boxShadow: K.shadow,
+          }}>
           <Field label="What kind of project?">
             <CatPicker value={f.cat} onChange={(c) => setF({ ...f, cat: c })} />
           </Field>
-          <Field label="Title" hint="Keep it plain and specific — neighbors scan fast.">
-            <TextInput value={f.title} onChange={set("title")} placeholder="e.g. Build raised beds at the Elm St. lot" />
+          <Field
+            label="Title"
+            hint="Keep it plain and specific — neighbors scan fast.">
+            <TextInput
+              value={f.title}
+              onChange={set("title")}
+              placeholder="e.g. Build raised beds at the Elm St. lot"
+            />
           </Field>
           <Field label="What needs doing?">
-            <TextArea value={f.desc} onChange={set("desc")} placeholder="A sentence or two on the task, what to bring, and who it helps." />
+            <TextArea
+              value={f.desc}
+              onChange={set("desc")}
+              placeholder="A sentence or two on the task, what to bring, and who it helps."
+            />
           </Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+            }}>
             <Field label="When">
-              <TextInput value={f.when} onChange={set("when")} placeholder="Sat · 9am" />
+              <TextInput
+                value={f.when}
+                onChange={set("when")}
+                placeholder="Sat · 9am"
+              />
             </Field>
             <Field label="Where">
-              <TextInput value={f.place} onChange={set("place")} placeholder="Elm St. lot" />
+              <TextInput
+                value={f.place}
+                onChange={set("place")}
+                placeholder="Elm St. lot"
+              />
             </Field>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 20,
+            }}>
             <Field label="Neighbors needed">
-              <Select value={f.cap} onChange={set("cap")} options={["4", "6", "8", "10", "12", "20"]} />
+              <Select
+                value={f.cap}
+                onChange={set("cap")}
+                options={["4", "6", "8", "10", "12", "20"]}
+              />
             </Field>
             <Field label="Karma reward" hint="Higher effort, higher reward.">
-              <Select value={f.karma} onChange={set("karma")} options={["10", "15", "20", "25", "30", "40"]} />
+              <Select
+                value={f.karma}
+                onChange={set("karma")}
+                options={["10", "15", "20", "25", "30", "40"]}
+              />
             </Field>
           </div>
           <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
-            <Button variant="primary" size="lg" icon="check" onClick={() => navigate("/")}>
-              Post project
+            <Button
+              variant="primary"
+              size="lg"
+              icon="check"
+              onClick={handlePost}
+              disabled={submitting}>
+              {submitting ? "Posting…" : "Post project"}
             </Button>
             <Button variant="ghost" size="lg" onClick={() => navigate("/")}>
               Save draft
@@ -165,11 +366,38 @@ export function StartPage() {
         </div>
 
         <div style={{ position: "sticky", top: 92 }}>
-          <div style={{ fontSize: 12, letterSpacing: "0.1em", textTransform: "uppercase", color: K.faint, fontWeight: 700, marginBottom: 12 }}>Live preview</div>
+          <div
+            style={{
+              fontSize: 12,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: K.faint,
+              fontWeight: 700,
+              marginBottom: 12,
+            }}>
+            Live preview
+          </div>
           <PreviewCard f={f} />
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, padding: "14px 16px", background: K.leafBg, borderRadius: 14 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              marginTop: 16,
+              padding: "14px 16px",
+              background: K.leafBg,
+              borderRadius: 14,
+            }}>
             <Icon name="spark" size={18} color={K.leaf} sw={1.8} />
-            <span style={{ fontSize: 12.5, color: K.forest, fontWeight: 600, lineHeight: 1.4 }}>Projects with a clear title fill up 2× faster.</span>
+            <span
+              style={{
+                fontSize: 12.5,
+                color: K.forest,
+                fontWeight: 600,
+                lineHeight: 1.4,
+              }}>
+              Projects with a clear title fill up 2× faster.
+            </span>
           </div>
         </div>
       </div>

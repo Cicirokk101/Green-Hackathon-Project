@@ -1,4 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  getCurrentUserId,
+  getUser,
+  updateUser,
+  getUserStats,
+  getJoinedProjects,
+  getCreatedProjects,
+  type UserDTO,
+  type UserStatsDTO,
+  type ProjectDTO,
+} from "../lib/api";
 
 type CSS = React.CSSProperties;
 
@@ -16,9 +27,6 @@ interface MetaEntry {
 }
 
 type Tab = "joined" | "created";
-
-type CardKey = "garden" | "cleanup" | "tool" | "bike";
-type OpenState = Record<CardKey, boolean>;
 
 /* ------------------------------------------------------------------ */
 /* Small presentational helpers                                        */
@@ -339,30 +347,82 @@ const cardThumb = (gradient: string): CSS => ({
 /* Main component                                                      */
 /* ------------------------------------------------------------------ */
 
-const PREV_LEVEL = 780;
-const NEXT_LEVEL = 1500;
+const LEVEL_THRESHOLDS = [0, 300, 780, 1500, 2800, 5000];
+const LEVEL_NAMES = ["Seedling", "Sprout", "Cornerstone", "Keystone", "Pillar", "Elder"];
+
+function getLevelInfo(karma: number) {
+  let level = 1;
+  for (let i = 1; i < LEVEL_THRESHOLDS.length; i++) {
+    if (karma >= LEVEL_THRESHOLDS[i]) level = i + 1;
+  }
+  level = Math.min(level, LEVEL_THRESHOLDS.length);
+  const prevThreshold = LEVEL_THRESHOLDS[level - 1] ?? 0;
+  const nextThreshold = LEVEL_THRESHOLDS[level] ?? prevThreshold;
+  const pct = nextThreshold > prevThreshold
+    ? Math.max(0, Math.min(100, ((karma - prevThreshold) / (nextThreshold - prevThreshold)) * 100))
+    : 100;
+  const pointsToNext = Math.max(0, nextThreshold - karma);
+  const nextName = LEVEL_NAMES[level] ?? null;
+  return { level, levelName: LEVEL_NAMES[level - 1] ?? "", pct, pointsToNext, nextName };
+}
 
 export default function KarmaProfile(): React.ReactElement {
   const [profile, setProfile] = useState<Profile>({
-    name: "Maya Reyes",
-    handle: "@mayagrows",
-    location: "Maplewood",
-    bio: "Grows tomatoes on the Elm St. lot, fixes squeaky bikes, and always has an extra rake. Carpentry & gardening are my thing.",
-    skills: ["Carpentry", "Gardening", "First aid"],
+    name: "",
+    handle: "",
+    location: "",
+    bio: "",
+    skills: [],
   });
   const [helping, setHelping] = useState<boolean>(true);
-  const [karma] = useState<number>(1240);
-  const [gardenHours] = useState<number>(8);
-  const [cleanupHours] = useState<number>(4);
+  const [karma, setKarma] = useState<number>(0);
+  const [stats, setStats] = useState<UserStatsDTO>({
+    projects_joined_count: 0,
+    projects_created_count: 0,
+    workshops_hosting_count: 0,
+    workshops_attending_count: 0,
+    neighbors_helped_count: 0,
+    badges_count: 0,
+  });
+  const [joinedProjects, setJoinedProjects] = useState<ProjectDTO[]>([]);
+  const [createdProjects, setCreatedProjects] = useState<ProjectDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const userId = getCurrentUserId();
+    async function fetchAll() {
+      try {
+        const [user, apiStats, joined, created] = await Promise.all([
+          getUser(userId),
+          getUserStats(userId),
+          getJoinedProjects(),
+          getCreatedProjects(),
+        ]);
+
+        setProfile({
+          name: user.name,
+          handle: user.handle ?? "",
+          location: user.location ?? "",
+          bio: user.bio ?? "",
+          skills: user.skills ?? [],
+        });
+        setHelping(user.helping_status === "helping");
+        setKarma(user.karma_points);
+        setStats(apiStats);
+        setJoinedProjects(joined.items);
+        setCreatedProjects(created.items);
+      } catch (err) {
+        console.error("Failed to load profile data", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchAll();
+  }, []);
 
   const [tab, setTab] = useState<Tab>("joined");
-  const [open, setOpen] = useState<OpenState>({
-    garden: false,
-    cleanup: false,
-    tool: false,
-    bike: false,
-  });
-  const toggle = (k: CardKey): void => setOpen((o) => ({ ...o, [k]: !o[k] }));
+  const [openCards, setOpenCards] = useState<Record<number, boolean>>({});
+  const toggle = (id: number): void => setOpenCards((o) => ({ ...o, [id]: !o[id] }));
 
   // edit modal
   const [editing, setEditing] = useState<boolean>(false);
@@ -377,11 +437,7 @@ export default function KarmaProfile(): React.ReactElement {
       .join("")
       .slice(0, 2)
       .toUpperCase() || "?";
-  const pct = Math.max(
-    0,
-    Math.min(100, ((karma - PREV_LEVEL) / (NEXT_LEVEL - PREV_LEVEL)) * 100),
-  );
-  const pointsToNext = Math.max(0, NEXT_LEVEL - karma);
+  const { level, levelName, pct, pointsToNext, nextName } = getLevelInfo(karma);
 
   const openEdit = (): void => {
     setDraft({ ...profile, skills: [...profile.skills] });
@@ -392,15 +448,28 @@ export default function KarmaProfile(): React.ReactElement {
     setEditing(false);
     setDraft(null);
   };
-  const saveEdit = (): void => {
+  const saveEdit = async (): Promise<void> => {
     if (!draft) return;
-    setProfile((p) => ({
-      name: draft.name.trim() || p.name,
-      handle: draft.handle.trim() || p.handle,
-      location: draft.location.trim() || p.location,
-      bio: draft.bio,
-      skills: draft.skills,
-    }));
+    try {
+      const userId = getCurrentUserId();
+      const user = await updateUser(userId, {
+        name: draft.name.trim() || undefined,
+        handle: draft.handle.trim() || undefined,
+        location: draft.location.trim() || undefined,
+        bio: draft.bio,
+        skills: draft.skills,
+        helping_status: helping ? "helping" : "break",
+      });
+      setProfile({
+        name: user.name,
+        handle: user.handle ?? "",
+        location: user.location ?? "",
+        bio: user.bio ?? "",
+        skills: user.skills ?? [],
+      });
+    } catch (err) {
+      console.error("Failed to save profile", err);
+    }
     closeEdit();
   };
   const addSkill = (): void => {
@@ -607,7 +676,7 @@ export default function KarmaProfile(): React.ReactElement {
                   fontSize: 26,
                   fontWeight: 600,
                 }}>
-                Level 4
+                Level {level}
               </span>
               <span
                 style={{
@@ -622,10 +691,10 @@ export default function KarmaProfile(): React.ReactElement {
                   fontSize: 16,
                   fontWeight: 700,
                 }}>
-                4
+                {level}
               </span>
               <span style={{ fontSize: 13, color: "#8A7C6B", fontWeight: 600 }}>
-                Cornerstone
+                {levelName}
               </span>
             </div>
 
@@ -663,7 +732,7 @@ export default function KarmaProfile(): React.ReactElement {
               <div>
                 <div
                   style={{ fontSize: 15, fontWeight: 700, color: "#F7F1E6" }}>
-                  Adept Accumulator
+                  {levelName}
                 </div>
                 <div style={{ fontSize: 13, color: "#C8A98C", marginTop: 2 }}>
                   {karma.toLocaleString()} karma points
@@ -689,9 +758,9 @@ export default function KarmaProfile(): React.ReactElement {
                 />
               </div>
               <div style={{ fontSize: 12.5, color: "#8A7C6B", marginTop: 7 }}>
-                {pointsToNext > 0
-                  ? `${pointsToNext} points to Level 5 · Keystone`
-                  : "Level 5 · Keystone reached!"}
+                {pointsToNext > 0 && nextName
+                  ? `${pointsToNext} points to Level ${level + 1} · ${nextName}`
+                  : `Max level reached · ${levelName}`}
               </div>
             </div>
 
@@ -758,396 +827,138 @@ export default function KarmaProfile(): React.ReactElement {
               <span style={{ fontSize: 14, color: "#8A7C6B" }}>
                 <strong style={{ color: "#2B2218" }}>
                   {tab === "joined"
-                    ? `${gardenHours + cleanupHours} hours`
-                    : "2 projects"}
+                    ? `${stats.projects_joined_count} projects`
+                    : `${stats.projects_created_count} projects`}
                 </strong>{" "}
-                {tab === "joined"
-                  ? "helping · past 2 weeks"
-                  : "you organize these"}
+                {tab === "joined" ? "you've joined" : "you organize"}
               </span>
             </div>
 
             {tab === "joined" && (
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                {/* Garden */}
-                <ExpandableCard
-                  open={open.garden}
-                  onToggle={() => toggle("garden")}
-                  summary={
-                    <>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 20,
-                          alignItems: "flex-start",
-                        }}>
-                        <div
-                          style={cardThumb(
-                            "linear-gradient(135deg, #2F6B45, #4F8A5C)",
-                          )}>
+                {loading && (
+                  <p style={{ color: "#8A7C6B", fontSize: 14 }}>Loading…</p>
+                )}
+                {!loading && joinedProjects.length === 0 && (
+                  <p style={{ color: "#8A7C6B", fontSize: 14 }}>
+                    You haven't joined any projects yet.
+                  </p>
+                )}
+                {joinedProjects.map((p) => (
+                  <ExpandableCard
+                    key={p.id}
+                    open={!!openCards[p.id]}
+                    onToggle={() => toggle(p.id)}
+                    summary={
+                      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                        <div style={cardThumb("linear-gradient(135deg, #2F6B45, #4F8A5C)")}>
                           <LeafIcon />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
-                              gap: 16,
-                            }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
                             <div>
-                              <div
-                                style={{
-                                  fontSize: 11,
-                                  letterSpacing: "0.12em",
-                                  textTransform: "uppercase",
-                                  color: "#2F6B45",
-                                  fontWeight: 700,
-                                }}>
-                                Garden
+                              <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "#2F6B45", fontWeight: 700 }}>
+                                {p.cat}
                               </div>
-                              <h3
-                                style={{
-                                  fontFamily: "'Newsreader', serif",
-                                  fontSize: 21,
-                                  fontWeight: 600,
-                                  margin: "4px 0 0",
-                                }}>
-                                Elm St. Community Garden
+                              <h3 style={{ fontFamily: "'Newsreader', serif", fontSize: 21, fontWeight: 600, margin: "4px 0 0" }}>
+                                {p.title}
                               </h3>
                             </div>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "flex-start",
-                                gap: 14,
-                                flexShrink: 0,
-                              }}>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexShrink: 0 }}>
                               <div style={{ textAlign: "right" }}>
-                                <div
-                                  style={{
-                                    fontSize: 14,
-                                    fontWeight: 700,
-                                    color: "#2B2218",
-                                  }}>
-                                  {gardenHours} hrs contributed
+                                <div style={{ fontSize: 14, fontWeight: 700, color: "#2B2218" }}>
+                                  {p.joined}/{p.cap} joined
                                 </div>
-                                <div
-                                  style={{
-                                    fontSize: 13,
-                                    color: "#9A8C79",
-                                    marginTop: 2,
-                                  }}>
-                                  last helped Jun 11
+                                <div style={{ fontSize: 13, color: "#9A8C79", marginTop: 2 }}>
+                                  {new Date(p.when).toLocaleDateString()}
                                 </div>
                               </div>
-                              <Chevron open={open.garden} />
+                              <Chevron open={!!openCards[p.id]} />
                             </div>
                           </div>
                         </div>
                       </div>
-                    </>
-                  }>
-                  <ProjectPreview
-                    label="Project preview"
-                    desc="A neighbor-run plot on the Elm St. lot — raised beds, a shared tool shed, and a compost system that feeds the whole block. Drop-in workdays run every weekend, all skill levels welcome."
-                    meta={[
-                      { label: "Organizer", value: "Elm St. Collective" },
-                      { label: "Next workday", value: "Saturday, 9:00 am" },
-                      { label: "Location", value: "214 Elm St., Maplewood" },
-                      { label: "Active neighbors", value: "18 this month" },
-                    ]}
-                    footerLeft="You've helped here 6 times"
-                    ctaText="View project page"
-                    ctaAccent="#2F6B45"
-                    ctaHover="#275838"
-                  />
-                </ExpandableCard>
-
-                {/* Cleanup */}
-                <ExpandableCard
-                  open={open.cleanup}
-                  onToggle={() => toggle("cleanup")}
-                  summary={
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 20,
-                        alignItems: "flex-start",
-                      }}>
-                      <div
-                        style={cardThumb(
-                          "linear-gradient(135deg, #C6532A, #E08A4A)",
-                        )}>
-                        <ChartIcon />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: 16,
-                          }}>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                letterSpacing: "0.12em",
-                                textTransform: "uppercase",
-                                color: "#2F6B45",
-                                fontWeight: 700,
-                              }}>
-                              Cleanup
-                            </div>
-                            <h3
-                              style={{
-                                fontFamily: "'Newsreader', serif",
-                                fontSize: 21,
-                                fontWeight: 600,
-                                margin: "4px 0 0",
-                              }}>
-                              Creek &amp; Trail Litter Sweep
-                            </h3>
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 14,
-                              flexShrink: 0,
-                            }}>
-                            <div style={{ textAlign: "right" }}>
-                              <div
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: 700,
-                                  color: "#2B2218",
-                                }}>
-                                {cleanupHours} hrs contributed
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  color: "#9A8C79",
-                                  marginTop: 2,
-                                }}>
-                                last helped Jun 7
-                              </div>
-                            </div>
-                            <Chevron open={open.cleanup} />
-                          </div>
-                        </div>
-                        <p
-                          style={{
-                            fontSize: 13.5,
-                            color: "#6F6253",
-                            lineHeight: 1.5,
-                            margin: "10px 0 0",
-                          }}>
-                          Cleared two miles of the Maple Creek path with eleven
-                          neighbors. Earned the{" "}
-                          <strong style={{ color: "#C6532A" }}>
-                            Clean Sweep
-                          </strong>{" "}
-                          badge.
-                        </p>
-                      </div>
-                    </div>
-                  }>
-                  <ProjectPreview
-                    label="Project preview"
-                    desc="Monthly litter sweeps along Maple Creek and its connecting trails, keeping two miles of waterway clear for the whole neighborhood. Gloves, bags, and grabbers provided at the trailhead."
-                    meta={[
-                      { label: "Organizer", value: "Creekkeepers" },
-                      { label: "Next sweep", value: "Sat, Jun 21 · 8:00 am" },
-                      { label: "Route", value: "Trailhead → footbridge" },
-                      { label: "Volunteers", value: "11 signed up" },
-                    ]}
-                    footerLeft="You've helped here 2 times"
-                    ctaText="View project page"
-                    ctaAccent="#2F6B45"
-                    ctaHover="#275838"
-                  />
-                </ExpandableCard>
+                    }>
+                    <ProjectPreview
+                      label="Project preview"
+                      desc={p.desc ?? ""}
+                      meta={[
+                        { label: "Organizer", value: p.host_name },
+                        { label: "Date", value: new Date(p.when).toLocaleString() },
+                        { label: "Location", value: p.place },
+                        { label: "Spots filled", value: `${p.pct}%` },
+                      ]}
+                      footerLeft={`${p.joined} of ${p.cap} spots filled`}
+                      ctaText="View project page"
+                      ctaAccent="#2F6B45"
+                      ctaHover="#275838"
+                    />
+                  </ExpandableCard>
+                ))}
               </div>
             )}
 
             {tab === "created" && (
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-                {/* Tool Library */}
-                <ExpandableCard
-                  open={open.tool}
-                  onToggle={() => toggle("tool")}
-                  summary={
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 20,
-                        alignItems: "flex-start",
-                      }}>
-                      <div
-                        style={cardThumb(
-                          "linear-gradient(135deg, #C6532A, #F7B53B)",
-                        )}>
-                        <ShelfIcon />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: 16,
-                          }}>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                letterSpacing: "0.12em",
-                                textTransform: "uppercase",
-                                color: "#C6532A",
-                                fontWeight: 700,
-                              }}>
-                              You organize
-                            </div>
-                            <h3
-                              style={{
-                                fontFamily: "'Newsreader', serif",
-                                fontSize: 21,
-                                fontWeight: 600,
-                                margin: "4px 0 0",
-                              }}>
-                              Elm St. Tool Library
-                            </h3>
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 14,
-                              flexShrink: 0,
-                            }}>
-                            <StatusPill active label="Active" />
-                            <Chevron open={open.tool} />
-                          </div>
+                {loading && (
+                  <p style={{ color: "#8A7C6B", fontSize: 14 }}>Loading…</p>
+                )}
+                {!loading && createdProjects.length === 0 && (
+                  <p style={{ color: "#8A7C6B", fontSize: 14 }}>
+                    You haven't created any projects yet.
+                  </p>
+                )}
+                {createdProjects.map((p) => (
+                  <ExpandableCard
+                    key={p.id}
+                    open={!!openCards[p.id]}
+                    onToggle={() => toggle(p.id)}
+                    summary={
+                      <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+                        <div style={cardThumb("linear-gradient(135deg, #C6532A, #F7B53B)")}>
+                          <ShelfIcon />
                         </div>
-                        <p
-                          style={{
-                            fontSize: 13.5,
-                            color: "#6F6253",
-                            lineHeight: 1.5,
-                            margin: "10px 0 0",
-                          }}>
-                          A shared shelf of drills, ladders, and yard tools any
-                          neighbor can borrow for the weekend.
-                        </p>
-                      </div>
-                    </div>
-                  }>
-                  <ProjectPreview
-                    label="Project preview"
-                    desc="You started this lending shelf so neighbors don't each buy a ladder they'll use twice. Borrow with a tap, return within a week, keep the block well-equipped."
-                    meta={[
-                      { label: "Status", value: "Active · published" },
-                      { label: "Borrowing now", value: "9 neighbors" },
-                      { label: "Inventory", value: "32 tools listed" },
-                      { label: "Started", value: "April 2024" },
-                    ]}
-                    footerLeft="3 borrow requests waiting"
-                    ctaText="Manage project"
-                    ctaAccent="#C6532A"
-                    ctaHover="#A8431F"
-                  />
-                </ExpandableCard>
-
-                {/* Bike Fix-It Stand (draft) */}
-                <ExpandableCard
-                  open={open.bike}
-                  onToggle={() => toggle("bike")}
-                  summary={
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 20,
-                        alignItems: "flex-start",
-                      }}>
-                      <div
-                        style={cardThumb(
-                          "linear-gradient(135deg, #2F6B45, #C6532A)",
-                        )}>
-                        <BikeIcon />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                            gap: 16,
-                          }}>
-                          <div>
-                            <div
-                              style={{
-                                fontSize: 11,
-                                letterSpacing: "0.12em",
-                                textTransform: "uppercase",
-                                color: "#C6532A",
-                                fontWeight: 700,
-                              }}>
-                              You organize
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
+                            <div>
+                              <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C6532A", fontWeight: 700 }}>
+                                You organize
+                              </div>
+                              <h3 style={{ fontFamily: "'Newsreader', serif", fontSize: 21, fontWeight: 600, margin: "4px 0 0" }}>
+                                {p.title}
+                              </h3>
                             </div>
-                            <h3
-                              style={{
-                                fontFamily: "'Newsreader', serif",
-                                fontSize: 21,
-                                fontWeight: 600,
-                                margin: "4px 0 0",
-                              }}>
-                              Saturday Bike Fix-It Stand
-                            </h3>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, flexShrink: 0 }}>
+                              <StatusPill active={p.status === "active"} label={p.status === "active" ? "Active" : "Draft"} />
+                              <Chevron open={!!openCards[p.id]} />
+                            </div>
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 14,
-                              flexShrink: 0,
-                            }}>
-                            <StatusPill active={false} label="Draft" />
-                            <Chevron open={open.bike} />
-                          </div>
+                          {p.desc && (
+                            <p style={{ fontSize: 13.5, color: "#6F6253", lineHeight: 1.5, margin: "10px 0 0" }}>
+                              {p.desc}
+                            </p>
+                          )}
                         </div>
-                        <p
-                          style={{
-                            fontSize: 13.5,
-                            color: "#6F6253",
-                            lineHeight: 1.5,
-                            margin: "10px 0 0",
-                          }}>
-                          A weekend stand for tune-ups and squeaky-brake fixes
-                          outside the library. Not published yet.
-                        </p>
                       </div>
-                    </div>
-                  }>
-                  <ProjectPreview
-                    label="Draft preview"
-                    desc="Your idea: a pop-up repair stand every other Saturday. Add a start date and a tool list to publish it to the neighborhood."
-                    meta={[
-                      { label: "Status", value: "Draft · unpublished" },
-                      { label: "Interested", value: "6 neighbors" },
-                      { label: "Category", value: "Bike repair" },
-                      { label: "Created", value: "Jun 2026" },
-                    ]}
-                    footerLeft="2 steps left to publish"
-                    ctaText="Continue setup"
-                    ctaAccent="#C6532A"
-                    ctaHover="#A8431F"
-                  />
-                </ExpandableCard>
+                    }>
+                    <ProjectPreview
+                      label={p.status === "active" ? "Project preview" : "Draft preview"}
+                      desc={p.desc ?? ""}
+                      meta={[
+                        { label: "Status", value: p.status === "active" ? "Active · published" : "Draft · unpublished" },
+                        { label: "Spots filled", value: `${p.joined} of ${p.cap}` },
+                        { label: "Category", value: p.cat },
+                        { label: "Created", value: new Date(p.created_at).toLocaleDateString() },
+                      ]}
+                      footerLeft={`${p.joined} neighbors joined`}
+                      ctaText={p.status === "active" ? "Manage project" : "Continue setup"}
+                      ctaAccent="#C6532A"
+                      ctaHover="#A8431F"
+                    />
+                  </ExpandableCard>
+                ))}
               </div>
             )}
           </div>
@@ -1198,7 +1009,7 @@ export default function KarmaProfile(): React.ReactElement {
                     fontSize: 22,
                     color: "#8A7C6B",
                   }}>
-                  8
+                  {stats.badges_count}
                 </span>
               </div>
               <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
@@ -1281,7 +1092,7 @@ export default function KarmaProfile(): React.ReactElement {
                   color: "#8A7C6B",
                   marginLeft: "auto",
                 }}>
-                13
+                {stats.projects_joined_count}
               </span>
             </div>
 
@@ -1321,7 +1132,7 @@ export default function KarmaProfile(): React.ReactElement {
                   color: "#8A7C6B",
                   marginLeft: "auto",
                 }}>
-                2
+                {stats.projects_created_count}
               </span>
             </div>
 
@@ -1343,7 +1154,7 @@ export default function KarmaProfile(): React.ReactElement {
                   color: "#8A7C6B",
                   marginLeft: "auto",
                 }}>
-                47
+                {stats.neighbors_helped_count}
               </span>
             </div>
 
