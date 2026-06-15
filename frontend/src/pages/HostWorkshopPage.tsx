@@ -231,12 +231,11 @@ export function HostWorkshopPage() {
     try {
       await createWorkshop({
         skill: f.skill,
-        category: f.cat,
-        when: f.when ? f.when.format("ddd · MMM D · h:mma") : "",
+        cat: f.cat,
+        when: f.when ? f.when.toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         place: f.place,
         seats: Number(f.seats),
         level: f.level,
-        description: f.desc,
       });
       navigate("/community");
     } catch {

@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 const MOCK = import.meta.env.VITE_MOCK_API === "true";
 
 function delay(ms = 400) {
@@ -52,13 +52,13 @@ export const getUserStats = (userId: number) =>
 
 /** GET /api/projects — list projects, optionally filtered */
 export const getProjects = (params?: ProjectsQueryParams) => {
-  const userId = getCurrentUserId();
-  const qs = new URLSearchParams({ user_id: String(userId) });
+  const qs = new URLSearchParams();
   if (params?.cat) qs.set("cat", params.cat);
   if (params?.host_id != null) qs.set("host_id", String(params.host_id));
   if (params?.joined_by != null) qs.set("joined_by", String(params.joined_by));
   if (params?.status) qs.set("status", params.status);
-  return request<ProjectListDTO>("GET", `/api/projects?${qs}`);
+  const query = qs.toString();
+  return request<ProjectListDTO>("GET", `/api/projects${query ? `?${query}` : ""}`);
 };
 
 /** GET /api/projects?joined_by=userId — projects the current user has joined */
@@ -74,57 +74,55 @@ export const getCreatedProjects = () => {
 };
 
 /** POST /api/projects — create a new project */
-export const createProject = (body: CreateProjectDTO) => {
-  const userId = getCurrentUserId();
-  return request<ProjectDTO>("POST", `/api/projects?user_id=${userId}`, body);
-};
+export const createProject = (body: CreateProjectDTO) =>
+  request<ProjectDTO>("POST", "/api/projects", body);
 
 /** POST /api/projects/:id/join — join a project */
-export const joinProject = (projectId: number) => {
-  const userId = getCurrentUserId();
-  return request<JoinProjectDTO>(
-    "POST",
-    `/api/projects/${projectId}/join?user_id=${userId}`
-  );
-};
+export const joinProject = (projectId: number) =>
+  request<JoinProjectDTO>("POST", `/api/projects/${projectId}/join`);
 
 /** POST /api/projects/:id/bookmark — toggle bookmark on a project */
-export const bookmarkProject = (projectId: number) => {
-  const userId = getCurrentUserId();
-  return request<BookmarkDTO>(
-    "POST",
-    `/api/projects/${projectId}/bookmark?user_id=${userId}`
-  );
-};
+export const bookmarkProject = (projectId: number) =>
+  request<BookmarkDTO>("POST", `/api/projects/${projectId}/bookmark`);
 
 // ── Workshops ─────────────────────────────────────────────────────────────────
 
-/** GET /api/workshops — list all upcoming workshops with seat counts */
-export const getWorkshops = () =>
-  request<WorkshopDTO[]>("GET", "/api/workshops");
+/** GET /api/workshops — list workshops, optionally filtered */
+export const getWorkshops = (params?: WorkshopsQueryParams) => {
+  const qs = new URLSearchParams();
+  if (params?.host_id != null) qs.set("host_id", String(params.host_id));
+  if (params?.attendee_id != null) qs.set("attendee_id", String(params.attendee_id));
+  const query = qs.toString();
+  return request<WorkshopDTO[]>("GET", `/api/workshops${query ? `?${query}` : ""}`);
+};
 
-/** POST /api/workshops/:id/reserve — reserve a seat for the current user */
-export const reserveSeat = (workshopId: string) =>
-  request<ReservationDTO>("POST", `/api/workshops/${workshopId}/reserve`);
+/** GET /api/workshops/:id — get a single workshop */
+export const getWorkshop = (workshopId: number) =>
+  request<WorkshopDTO>("GET", `/api/workshops/${workshopId}`);
 
-/** DELETE /api/workshops/:id/reserve — cancel the current user's reservation */
-export const cancelReservation = (workshopId: string) =>
-  request<void>("DELETE", `/api/workshops/${workshopId}/reserve`);
-
-/** POST /api/workshops/:id/waitlist — join the waitlist when workshop is full */
-export const joinWaitlist = (workshopId: string) =>
-  request<WaitlistDTO>("POST", `/api/workshops/${workshopId}/waitlist`);
-
-/** GET /api/workshops/:id/reservations/me — check if current user has reserved */
-export const getMyReservation = (workshopId: string) =>
-  request<ReservationDTO | null>(
-    "GET",
-    `/api/workshops/${workshopId}/reservations/me`
-  );
-
-/** POST /api/workshops — create a new workshop (host flow) */
+/** POST /api/workshops — create a new workshop */
 export const createWorkshop = (body: CreateWorkshopDTO) =>
   request<WorkshopDTO>("POST", "/api/workshops", body);
+
+/** PATCH /api/workshops/:id — update a workshop (host only) */
+export const updateWorkshop = (workshopId: number, body: UpdateWorkshopDTO) =>
+  request<WorkshopDTO>("PATCH", `/api/workshops/${workshopId}`, body);
+
+/** DELETE /api/workshops/:id — delete a workshop (host only) */
+export const deleteWorkshop = (workshopId: number) =>
+  request<void>("DELETE", `/api/workshops/${workshopId}`);
+
+/** POST /api/workshops/:id/join — join a workshop (backend decides seat vs waitlist) */
+export const joinWorkshop = (workshopId: number) =>
+  request<JoinWorkshopDTO>("POST", `/api/workshops/${workshopId}/join`);
+
+/** DELETE /api/workshops/:id/join — leave a workshop or cancel waitlist spot */
+export const leaveWorkshop = (workshopId: number) =>
+  request<LeaveWorkshopDTO>("DELETE", `/api/workshops/${workshopId}/join`);
+
+/** GET /api/workshops/:id/join/:userId — check join status for a user */
+export const getWorkshopJoinStatus = (workshopId: number, userId: number) =>
+  request<JoinStatusDTO>("GET", `/api/workshops/${workshopId}/join/${userId}`);
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
@@ -217,39 +215,61 @@ export interface BookmarkDTO {
   bookmarked: boolean;
 }
 
+export interface WorkshopsQueryParams {
+  host_id?: number;
+  attendee_id?: number;
+}
+
 export interface WorkshopDTO {
-  id: string;
+  id: number;
   skill: string;
-  category: string;
-  hostId: string;
-  hostName: string;
+  cat: string;
+  icon: string;
+  host_id: number;
+  host_initials: string;
+  host_name: string;
   when: string;
   place: string;
   seats: number;
   taken: number;
+  seats_left: number;
   level: string;
-}
-
-export interface ReservationDTO {
-  id: string;
-  workshopId: string;
-  userId: string;
-  reservedAt: string;
-}
-
-export interface WaitlistDTO {
-  id: string;
-  workshopId: string;
-  userId: string;
-  position: number;
+  full: boolean;
+  attending: boolean;
+  is_mine: boolean;
+  created_at: string;
 }
 
 export interface CreateWorkshopDTO {
   skill: string;
-  category: string;
+  cat: string;
   when: string;
   place: string;
   seats: number;
   level: string;
-  description: string;
+}
+
+export interface UpdateWorkshopDTO {
+  skill?: string;
+  cat?: string;
+  when?: string;
+  place?: string;
+  seats?: number;
+  level?: string;
+}
+
+export interface JoinWorkshopDTO {
+  success: boolean;
+  on_waitlist: boolean;
+  seats_left: number;
+}
+
+export interface LeaveWorkshopDTO {
+  success: boolean;
+  seats_left: number;
+}
+
+export interface JoinStatusDTO {
+  joined: boolean;
+  on_waitlist: boolean;
 }

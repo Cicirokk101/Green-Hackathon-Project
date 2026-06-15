@@ -6,7 +6,6 @@ import {
   getUserStats,
   getJoinedProjects,
   getCreatedProjects,
-  type UserDTO,
   type UserStatsDTO,
   type ProjectDTO,
 } from "../lib/api";
@@ -279,24 +278,6 @@ const LeafIcon = (): React.ReactElement => (
     />
   </svg>
 );
-const ChartIcon = (): React.ReactElement => (
-  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={thumbIcon}>
-    <path
-      d="M4 18l5-5 3 3 8-8"
-      stroke="#fff"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M16 8h4v4"
-      stroke="#fff"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 const ShelfIcon = (): React.ReactElement => (
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={thumbIcon}>
     <rect
@@ -316,19 +297,6 @@ const ShelfIcon = (): React.ReactElement => (
       rx="1.2"
       stroke="#fff"
       strokeWidth={1.3}
-    />
-  </svg>
-);
-const BikeIcon = (): React.ReactElement => (
-  <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={thumbIcon}>
-    <circle cx="6.5" cy="15.5" r="3.3" stroke="#fff" strokeWidth={1.3} />
-    <circle cx="17.5" cy="15.5" r="3.3" stroke="#fff" strokeWidth={1.3} />
-    <path
-      d="M6.5 15.5l3.5-6.5h5l2.5 6.5M10 9h4.5"
-      stroke="#fff"
-      strokeWidth={1.3}
-      strokeLinecap="round"
-      strokeLinejoin="round"
     />
   </svg>
 );
@@ -429,14 +397,6 @@ export default function KarmaProfile(): React.ReactElement {
   const [draft, setDraft] = useState<Profile | null>(null);
   const [newSkill, setNewSkill] = useState<string>("");
 
-  const initials =
-    profile.name
-      .split(" ")
-      .filter(Boolean)
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase() || "?";
   const { level, levelName, pct, pointsToNext, nextName } = getLevelInfo(karma);
 
   const openEdit = (): void => {

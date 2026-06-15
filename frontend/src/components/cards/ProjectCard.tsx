@@ -12,9 +12,8 @@ export interface Project {
   icon: IconName;
   place: string;
   karma: number;
-  host: string;
-  hostName: string;
-  dist: string;
+  host_initials: string;
+  host_name: string;
   when: string;
   title: string;
   joined: number;
@@ -52,9 +51,9 @@ export function ProjectCard({ p }: { p: Project }) {
       <div style={{ padding: "18px 20px 20px" }}>
         <h4 style={{ fontFamily: K.serif, fontSize: 20, fontWeight: 700, margin: "0 0 12px", lineHeight: 1.2 }}>{p.title}</h4>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-          <Avatar initials={p.host} size={26} />
+          <Avatar initials={p.host_initials} size={26} />
           <span style={{ fontSize: 13, color: K.muted }}>
-            {p.hostName} · {p.dist} · {p.when}
+            {p.host_name} · {(() => { const d = new Date(p.when); return isNaN(d.getTime()) ? p.when : d.toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); })()}
           </span>
         </div>
         <div style={{ marginBottom: 14 }}>

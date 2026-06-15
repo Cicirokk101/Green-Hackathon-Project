@@ -1,6 +1,10 @@
 import type { ChangeEvent, ReactNode } from "react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import type { Dayjs } from "dayjs";
 import { Avatar } from "../components/ui/Avatar";
 import { KarmaBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -30,7 +34,7 @@ interface ProjectForm {
   cat: CategoryName;
   title: string;
   desc: string;
-  when: string;
+  when: Dayjs | null;
   place: string;
   cap: string;
   karma: string;
@@ -172,7 +176,7 @@ function PreviewCard({ f }: { f: ProjectForm }) {
             color={`linear-gradient(135deg,${K.orange},${K.terra})`}
           />
           <span style={{ fontSize: 12.5, color: K.muted }}>
-            You · Maplewood {f.when ? "· " + f.when : ""}
+            You · Maplewood {f.when ? "· " + f.when.format("ddd · MMM D · h:mma") : ""}
           </span>
         </div>
         <Progress pct={0} />
@@ -190,7 +194,7 @@ export function StartPage() {
     cat: "Garden",
     title: "",
     desc: "",
-    when: "",
+    when: null,
     place: "",
     cap: "8",
     karma: "25",
@@ -206,15 +210,12 @@ export function StartPage() {
       setF({ ...f, [k]: e.target.value });
 
   const handlePost = async () => {
-    if (!f.title.trim() || !f.place.trim() || !f.when.trim()) return;
+    if (!f.title.trim() || !f.place.trim()) return;
     setSubmitting(true);
     try {
-      // Parse a loose "Sat · 9am" style string into an ISO datetime for the backend.
-      // Fall back to a datetime 7 days from now if we can't parse it.
-      const parsed = new Date(f.when);
-      const when = isNaN(parsed.getTime())
-        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-        : parsed.toISOString();
+      const when = f.when
+        ? f.when.toISOString()
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       await createProject({
         cat: f.cat,
         title: f.title,
@@ -315,11 +316,13 @@ export function StartPage() {
               gap: 20,
             }}>
             <Field label="When">
-              <TextInput
-                value={f.when}
-                onChange={set("when")}
-                placeholder="Sat · 9am"
-              />
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DateTimePicker
+                  value={f.when}
+                  onChange={(val: Dayjs | null) => setF({ ...f, when: val })}
+                  slotProps={{ textField: { size: "small", fullWidth: true } }}
+                />
+              </LocalizationProvider>
             </Field>
             <Field label="Where">
               <TextInput

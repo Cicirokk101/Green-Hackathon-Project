@@ -6,7 +6,7 @@ import { Eyebrow } from "../components/ui/Eyebrow";
 import { Hero } from "../components/layout/Hero";
 import { Icon, type IconName } from "../lib/icons";
 import { CAT, K, type CategoryName } from "../lib/karma";
-import { reserveSeat, cancelReservation, joinWaitlist } from "../lib/api";
+import { joinWorkshop, leaveWorkshop } from "../lib/api";
 
 interface Workshop {
   id: string;
@@ -126,14 +126,15 @@ export function CommunityPage() {
   async function handleReserve(w: Workshop) {
     const current = reservationState[w.id];
     const taken = takenMap[w.id] ?? w.taken;
-    const full = taken >= w.seats;
 
-    // cancel if already reserved
-    if (current === "reserved") {
+    // cancel if already reserved or waitlisted
+    if (current === "reserved" || current === "waitlisted") {
       setReservationState((s) => ({ ...s, [w.id]: "loading" }));
       try {
-        await cancelReservation(w.id);
-        setTakenMap((m) => ({ ...m, [w.id]: taken - 1 }));
+        await leaveWorkshop(Number(w.id));
+        if (current === "reserved") {
+          setTakenMap((m) => ({ ...m, [w.id]: taken - 1 }));
+        }
         setReservationState((s) => ({ ...s, [w.id]: "idle" }));
       } catch {
         setReservationState((s) => ({ ...s, [w.id]: "error" }));
@@ -143,11 +144,10 @@ export function CommunityPage() {
 
     setReservationState((s) => ({ ...s, [w.id]: "loading" }));
     try {
-      if (full) {
-        await joinWaitlist(w.id);
+      const result = await joinWorkshop(Number(w.id));
+      if (result.on_waitlist) {
         setReservationState((s) => ({ ...s, [w.id]: "waitlisted" }));
       } else {
-        await reserveSeat(w.id);
         setTakenMap((m) => ({ ...m, [w.id]: taken + 1 }));
         setReservationState((s) => ({ ...s, [w.id]: "reserved" }));
       }
