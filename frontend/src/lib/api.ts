@@ -66,6 +66,12 @@ export const getMe = (): Promise<UserDTO> => request<UserDTO>("GET", "/api/users
 export const updateSkills = (skills: string[]): Promise<UserDTO> =>
   request<UserDTO>("PATCH", "/api/users/me", { skills });
 
+// ── Skills ────────────────────────────────────────────────────────────────────
+
+/** GET /api/skills/requested — skills neighbors are asking for, most-requested first */
+export const getSkillRequests = (): Promise<SkillRequestDTO[]> =>
+  request<SkillRequestDTO[]>("GET", "/api/skills/requested");
+
 // ── Workshops ─────────────────────────────────────────────────────────────────
 
 /** GET /api/workshops — list all upcoming workshops with seat counts */
@@ -176,4 +182,9 @@ export interface UserDTO {
   skills: string[];
   interests: string[];
   level: number;
+}
+
+export interface SkillRequestDTO {
+  skill: string;
+  count: number;
 }

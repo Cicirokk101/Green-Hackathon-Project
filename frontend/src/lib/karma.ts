@@ -45,3 +45,23 @@ export const AV: Record<string, string> = {
   DA: '#C6532A', JK: '#2F6B45', PL: '#C6532A', SM: '#2F6B45', TN: '#C6532A',
   MR: '#F26A21', RW: '#1F8A52', LO: '#D99A2B', EH: '#2F6B45',
 };
+
+// skills commonly associated with each project category — used by the
+// "For me" filter to match projects against a neighbor's listed skills
+export const CATEGORY_SKILLS: Record<CategoryName, string[]> = {
+  Garden: ['Gardening', 'Composting', 'Container gardening', 'Landscaping', 'Lawn care'],
+  Cleanup: ['Cleanup', 'Recycling', 'Organizing'],
+  Repair: ['Carpentry', 'Furniture repair', 'Basic electrical', 'Bike repair', 'Plumbing', 'Woodworking', 'Handyman'],
+  'Skill-share': ['Teaching', 'Tutoring', 'Cooking', 'Baking', 'Sourdough basics', 'Canning & preserving', 'Sewing', 'Photography'],
+  'Mutual aid': ['First aid', 'Resume help', 'Translation', 'Childcare', 'Pet sitting', 'Meal prep', 'Transportation', 'Tech support'],
+};
+
+/** True if any of a neighbor's skills relate to the given project category. */
+export function categoryMatchesSkills(cat: CategoryName, skills: string[]): boolean {
+  const wanted = CATEGORY_SKILLS[cat].map((s) => s.toLowerCase());
+  return skills.some((skill) => {
+    const sk = skill.trim().toLowerCase();
+    if (!sk) return false;
+    return wanted.some((w) => w === sk || w.includes(sk) || sk.includes(w));
+  });
+}
